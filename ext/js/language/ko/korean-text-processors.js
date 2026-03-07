@@ -17,16 +17,22 @@
 
 import {Hangul} from '../../../lib/hangul-js.js';
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const disassembleHangul = {
     name: 'Disassemble Hangul',
     description: 'Disassemble Hangul characters into jamo.',
-    process: (str) => [Hangul.disassemble(str, false).join('')],
+    options: [true], // Could probably also be set to [false, true], but this way it is always on
+    process: (str) => {
+        return Hangul.disassemble(str, false).join('');
+    },
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const reassembleHangul = {
     name: 'Reassemble Hangul',
     description: 'Reassemble Hangul characters from jamo.',
-    process: (str) => [Hangul.assemble(str)],
+    options: [true], // Could probably also be set to [false, true], but this way it is always on
+    process: (str) => {
+        return Hangul.assemble(str);
+    },
 };

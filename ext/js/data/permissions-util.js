@@ -87,15 +87,10 @@ export function setPermissionsGranted(permissions, shouldHave) {
  * @returns {Promise<chrome.permissions.Permissions>}
  */
 export function getAllPermissions() {
-    return new Promise((resolve, reject) => {
-        chrome.permissions.getAll((result) => {
-            const e = chrome.runtime.lastError;
-            if (e) {
-                reject(new Error(e.message));
-            } else {
-                resolve(result);
-            }
-        });
+    // Electron workaround - chrome.permissions.getAll() not available
+    return Promise.resolve({
+        origins: ["<all_urls>"],
+        permissions: ["clipboardWrite", "storage", "unlimitedStorage", "scripting", "contextMenus"]
     });
 }
 

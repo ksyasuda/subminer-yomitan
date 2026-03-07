@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import {basicTextProcessorOptions} from '../text-processors.js';
 import {convertAlphabeticToKana} from './japanese-wanakana.js';
 import {
     collapseEmphaticSequences as collapseEmphaticSequencesFunction,
@@ -28,70 +29,90 @@ import {
 } from './japanese.js';
 import {convertVariants} from '../../../lib/kanji-processor.js';
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const convertHalfWidthCharacters = {
     name: 'Convert half width characters to full width',
     description: 'ﾖﾐﾁｬﾝ → ヨミチャン',
-    process: (str) => [str, convertHalfWidthKanaToFullWidth(str)],
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? convertHalfWidthKanaToFullWidth(str) : str),
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const alphabeticToHiragana = {
     name: 'Convert alphabetic characters to hiragana',
     description: 'yomichan → よみちゃん',
-    process: (str) => [str, convertAlphabeticToKana(str)],
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? convertAlphabeticToKana(str) : str),
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').BidirectionalConversionPreprocessor} */
 export const alphanumericWidthVariants = {
     name: 'Convert between alphabetic width variants',
     description: 'ｙｏｍｉｔａｎ → yomitan and vice versa',
-    process: (str) => [
-        str,
-        convertFullWidthAlphanumericToNormal(str),
-        convertAlphanumericToFullWidth(str),
-    ],
+    options: ['off', 'direct', 'inverse'],
+    process: (str, setting) => {
+        switch (setting) {
+            case 'off':
+                return str;
+            case 'direct':
+                return convertFullWidthAlphanumericToNormal(str);
+            case 'inverse':
+                return convertAlphanumericToFullWidth(str);
+        }
+    },
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').BidirectionalConversionPreprocessor} */
 export const convertHiraganaToKatakana = {
     name: 'Convert hiragana to katakana',
     description: 'よみちゃん → ヨミチャン and vice versa',
-    process: (str) => [
-        str,
-        convertHiraganaToKatakanaFunction(str),
-        convertKatakanaToHiraganaFunction(str),
-    ],
+    options: ['off', 'direct', 'inverse'],
+    process: (str, setting) => {
+        switch (setting) {
+            case 'off':
+                return str;
+            case 'direct':
+                return convertHiraganaToKatakanaFunction(str);
+            case 'inverse':
+                return convertKatakanaToHiraganaFunction(str);
+        }
+    },
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<[collapseEmphatic: boolean, collapseEmphaticFull: boolean]>} */
 export const collapseEmphaticSequences = {
     name: 'Collapse emphatic character sequences',
     description: 'すっっごーーい → すっごーい / すごい',
-    process: (str) => [
-        str,
-        collapseEmphaticSequencesFunction(str, false),
-        collapseEmphaticSequencesFunction(str, true),
-    ],
+    options: [[false, false], [true, false], [true, true]],
+    process: (str, setting) => {
+        const [collapseEmphatic, collapseEmphaticFull] = setting;
+        if (collapseEmphatic) {
+            str = collapseEmphaticSequencesFunction(str, collapseEmphaticFull);
+        }
+        return str;
+    },
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const normalizeCombiningCharacters = {
     name: 'Normalize combining characters',
-    description: 'ド → ド (U+30C8 U+3099 → U+30C9)',
-    process: (str) => [str, normalizeCombiningCharactersFunction(str)],
+    description: 'ド → ド (U+30C8 U+3099 → U+30C9)',
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? normalizeCombiningCharactersFunction(str) : str),
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const normalizeCJKCompatibilityCharacters = {
     name: 'Normalize CJK Compatibility Characters',
-    description: '㌀ → アパート',
-    process: (str) => [str, normalizeCJKCompatibilityCharactersFunction(str)],
+    description: '㌀ → アパート',
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? normalizeCJKCompatibilityCharactersFunction(str) : str),
 };
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').TextProcessor<boolean>} */
 export const standardizeKanji = {
     name: 'Convert kanji variants to their modern standard form',
     description: '萬 → 万',
-    process: (str) => [str, convertVariants(str)],
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? convertVariants(str) : str),
 };

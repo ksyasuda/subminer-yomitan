@@ -23,8 +23,9 @@ import {isCodePointKorean} from './ko/korean.js';
 import {LanguageTransformer} from './language-transformer.js';
 import {getAllLanguageReadingNormalizers, getAllLanguageTextProcessors} from './languages.js';
 import {MultiLanguageTransformer} from './multi-language-transformer.js';
-import {MAX_PROCESS_VARIANTS} from './text-processors.js';
 import {isCodePointChinese} from './zh/chinese.js';
+
+const SUBMINER_DICTIONARY_TITLE_PREFIX = 'SubMiner Character Dictionary';
 
 /**
  * Class which finds term and kanji dictionary entries for text.
@@ -557,7 +558,7 @@ export class Translator {
 
     /**
      * @param {string} text
-     * @param {import('language').TextProcessorWithId[]} textProcessors
+     * @param {import('language').TextProcessorWithId<unknown>[]} textProcessors
      * @param {(import('translation').FindTermsTextReplacement[] | null)[]} textReplacements
      * @param {import('translation-internal').TextCache} textCache
      * @returns {import('translation-internal').VariantAndTextProcessorRuleChainCandidatesMap}
@@ -572,11 +573,12 @@ export class Translator {
             if (textReplacement === null) { continue; }
             variantsMap.set(this._applyTextReplacements(text, textReplacement), [['Text Replacement' + ' ' + id]]);
         }
-        for (const {id, textProcessor: {process}} of textProcessors) {
+        for (const {id, textProcessor: {process, options}} of textProcessors) {
             /** @type {import('translation-internal').VariantAndTextProcessorRuleChainCandidatesMap} */
             const newVariantsMap = new Map();
             for (const [variant, currentPreprocessorRuleChainCandidates] of variantsMap) {
-                for (const processed of this._getProcessedTexts(textCache, variant, id, process)) {
+                for (const option of options) {
+                    const processed = this._getProcessedText(textCache, variant, id, option, process);
                     const existingCandidates = newVariantsMap.get(processed);
 
                     // Ignore if applying the textProcessor doesn't change the source
@@ -602,27 +604,30 @@ export class Translator {
      * @param {import('translation-internal').TextCache} textCache
      * @param {string} text
      * @param {string} id
+     * @param {unknown} setting
      * @param {import('language').TextProcessorFunction} process
-     * @returns {string[]}
+     * @returns {string}
      */
-    _getProcessedTexts(textCache, text, id, process) {
+    _getProcessedText(textCache, text, id, setting, process) {
         let level1 = textCache.get(text);
         if (!level1) {
             level1 = new Map();
             textCache.set(text, level1);
         }
 
-        let results = level1.get(id);
-        if (typeof results === 'undefined') {
-            results = process(text);
-            if (results.length > MAX_PROCESS_VARIANTS) {
-                // eslint-disable-next-line no-console
-                console.warn(`Text processor "${id}" produced ${results.length} variants for input "${text}"; truncating to ${MAX_PROCESS_VARIANTS}`);
-                results = results.slice(0, MAX_PROCESS_VARIANTS);
-            }
-            level1.set(id, results);
+        let level2 = level1.get(id);
+        if (!level2) {
+            level2 = new Map();
+            level1.set(id, level2);
         }
-        return results;
+
+        if (!level2.has(setting)) {
+            text = process(text, setting);
+            level2.set(setting, text);
+        } else {
+            text = level2.get(setting) || '';
+        }
+        return text;
     }
 
     /**
@@ -1528,6 +1533,23 @@ export class Translator {
         return Array.isArray(value) ? value : (typeof value === 'number' ? [value] : []);
     }
 
+    /**
+     * @param {string|undefined} value
+     * @returns {boolean}
+     */
+    _isSubMinerDictionary(value) {
+        return typeof value === 'string' && value.startsWith(SUBMINER_DICTIONARY_TITLE_PREFIX);
+    }
+
+    /**
+     * @param {string|undefined} dictionary
+     * @param {string|undefined} dictionaryAlias
+     * @returns {number}
+     */
+    _getSubMinerDictionarySortBoost(dictionary, dictionaryAlias) {
+        return (this._isSubMinerDictionary(dictionary) || this._isSubMinerDictionary(dictionaryAlias)) ? 1 : 0;
+    }
+
     // Kanji data
 
     /**
@@ -2159,6 +2181,10 @@ export class Translator {
             i = v2.sourceTermExactMatchCount - v1.sourceTermExactMatchCount;
             if (i !== 0) { return i; }
 
+            // Prefer SubMiner character dictionary entries without changing user dictionary order.
+            i = this._getSubMinerDictionarySortBoost(v2.definitions[0]?.dictionary, v2.dictionaryAlias) - this._getSubMinerDictionarySortBoost(v1.definitions[0]?.dictionary, v1.dictionaryAlias);
+            if (i !== 0) { return i; }
+
             // Sort by frequency order
             i = v1.frequencyOrder - v2.frequencyOrder;
             if (i !== 0) { return i; }
@@ -2202,8 +2228,12 @@ export class Translator {
          * @returns {number}
          */
         const compareFunction = (v1, v2) => {
+            // Prefer SubMiner character dictionary definitions without changing user dictionary order.
+            let i = this._getSubMinerDictionarySortBoost(v2.dictionary, v2.dictionaryAlias) - this._getSubMinerDictionarySortBoost(v1.dictionary, v1.dictionaryAlias);
+            if (i !== 0) { return i; }
+
             // Sort by frequency order
-            let i = v1.frequencyOrder - v2.frequencyOrder;
+            i = v1.frequencyOrder - v2.frequencyOrder;
             if (i !== 0) { return i; }
 
             // Sort by dictionary order

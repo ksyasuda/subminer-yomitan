@@ -87,12 +87,15 @@ export async function buildLibs() {
         code: {source: true, esm: true},
         allowUnionTypes: true,
     });
-    const moduleCode = standaloneCode(ajv);
+    const validateSchemasPath = path.join(extDir, 'lib/validate-schemas.js');
+    if (!fs.existsSync(validateSchemasPath)) {
+        const moduleCode = standaloneCode(ajv);
 
-    // https://github.com/ajv-validator/ajv/issues/2209
-    const patchedModuleCode = "// @ts-nocheck\nimport {ucs2length} from './ucs2length.js';" + moduleCode.replaceAll('require("ajv/dist/runtime/ucs2length").default', 'ucs2length');
+        // https://github.com/ajv-validator/ajv/issues/2209
+        const patchedModuleCode = "// @ts-nocheck\nimport {ucs2length} from './ucs2length.js';" + moduleCode.replaceAll('require("ajv/dist/runtime/ucs2length").default', 'ucs2length');
 
-    fs.writeFileSync(path.join(extDir, 'lib/validate-schemas.js'), patchedModuleCode);
+        fs.writeFileSync(validateSchemasPath, patchedModuleCode);
+    }
 
     await copyWasm(path.join(extDir, 'lib'));
 }
