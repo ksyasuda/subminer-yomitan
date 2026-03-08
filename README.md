@@ -98,13 +98,13 @@ Feel free to join us on the [Yomitan Discord](https://discord.gg/YkQrXW6TXF).
 
 ## Building Yomitan
 
-1. Install [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/).
+1. Install [Bun](https://bun.sh/).
 
-2. Run `npm ci` to set up the environment.
+2. Run `bun install` to set up the environment.
 
-3. Run `npm run license-report:html` to generate any missing or changed license information.
+3. Run `bun run license-report:html` to generate any missing or changed license information.
 
-4. Run `npm run build` for a plain testing build or `npm run-script build -- --all --version {version}` for a release build (replacing `{version}` with a version number).
+4. Run `bun run build` for a plain testing build or `bun run build -- --all --version {version}` for a release build (replacing `{version}` with a version number).
 
 5. The builds for each browser and release branch can be found in the `builds` directory.
 
@@ -114,7 +114,7 @@ For more information, see [Contributing](./CONTRIBUTING.md#setup).
 
 Yomitan uses several third-party libraries to function.
 
-<!-- The following table is generated using the command `npm run license-report:markdown`. -->
+<!-- The following table is generated using the command `bun run license-report:markdown`. -->
 
 | Name                | License type | Link                                                                   |
 | :------------------ | :----------- | :--------------------------------------------------------------------- |

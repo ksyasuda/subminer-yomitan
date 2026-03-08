@@ -1,1 +1,1 @@
-@npm run-script build -- %*
+@bun run build -- %*

@@ -22,15 +22,18 @@ jobs:
         with:
           node-version-file: "package.json"
 
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+
       # intentially do not use cache to keep the build more comprehensible and sandboxed
       - name: Install dependencies
         run: npm ci
 
       - name: Build Legal
-        run: npm run license-report:html
+        run: bun run license-report:html
 
       - name: Build
-        run: npm run-script build -- --all --version ${{ github.ref_name }}
+        run: bun run build -- --all --version ${{ github.ref_name }}
         shell: bash
 
       - name: Generate hashes
