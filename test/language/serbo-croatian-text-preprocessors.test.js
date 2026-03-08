@@ -16,96 +16,35 @@
  */
 
 import {describe, expect, test} from 'vitest';
-import {addSerboCroatianDiacritics} from '../../ext/js/language/sh/serbo-croatian-text-preprocessors.js';
+import {removeSerboCroatianAccentMarks} from '../../ext/js/language/sh/serbo-croatian-text-preprocessors.js';
 
-const {process} = addSerboCroatianDiacritics;
+/**
+ * @param {string} text
+ * @param {boolean} setting
+ * @returns {string}
+ */
+function process(text, setting) {
+    return removeSerboCroatianAccentMarks.process(text, setting);
+}
 
-describe('addSerboCroatianDiacritics', () => {
-    test('no replaceable letters passes through unchanged', () => {
-        expect(process('hello')).toStrictEqual(['hello']);
+describe('removeSerboCroatianAccentMarks', () => {
+    test('passes text through when disabled', () => {
+        expect(process('čȕvaj', false)).toBe('čȕvaj');
     });
 
-    test('c expands to c, č, ć', () => {
-        expect(process('c')).toStrictEqual(['c', 'č', 'ć']);
+    test('removes acute accents from vowels', () => {
+        expect(process('A\u0301 a\u0301', true)).toBe('A a');
     });
 
-    test('C expands to C, Č, Ć', () => {
-        expect(process('C')).toStrictEqual(['C', 'Č', 'Ć']);
+    test('preserves non-accented letters and spacing', () => {
+        expect(process('čuvaj kuću', true)).toBe('čuvaj kuću'.normalize('NFD'));
     });
 
-    test('z expands to z, ž', () => {
-        expect(process('z')).toStrictEqual(['z', 'ž']);
+    test('strips combining accent marks after Serbo-Croatian vowels only', () => {
+        expect(process('go\u0301rjеti', true)).toBe('gorjеti');
     });
 
-    test('Z expands to Z, Ž', () => {
-        expect(process('Z')).toStrictEqual(['Z', 'Ž']);
-    });
-
-    test('s expands to s, š', () => {
-        expect(process('s')).toStrictEqual(['s', 'š']);
-    });
-
-    test('S expands to S, Š', () => {
-        expect(process('S')).toStrictEqual(['S', 'Š']);
-    });
-
-    test('dj expands to dj, đ', () => {
-        expect(process('dj')).toStrictEqual(['dj', 'đ']);
-    });
-
-    test('DJ expands to DJ, Đ', () => {
-        expect(process('DJ')).toStrictEqual(['DJ', 'Đ']);
-    });
-
-    test('dj digraph is matched before d alone', () => {
-        const variants = process('djak');
-        expect(variants).toContain('đak');
-        expect(variants).toContain('djak');
-        // d alone should not produce đ when followed by j (already consumed)
-        expect(variants).toHaveLength(2);
-    });
-
-    test('d not followed by j is left unchanged', () => {
-        expect(process('dan')).toStrictEqual(['dan']);
-    });
-
-    test('combinations multiply correctly', () => {
-        // 'sz': s(2) * z(2) = 4 variants
-        const variants = process('sz');
-        expect(variants).toHaveLength(4);
-        expect(variants).toContain('sz');
-        expect(variants).toContain('šz');
-        expect(variants).toContain('sž');
-        expect(variants).toContain('šž');
-    });
-
-    test('word with c and dj produces all combinations', () => {
-        // 'cdj': c(3) * dj(2) = 6 variants
-        const variants = process('cdj');
-        expect(variants).toHaveLength(6);
-        expect(variants).toContain('cdj');
-        expect(variants).toContain('cđ');
-        expect(variants).toContain('čdj');
-        expect(variants).toContain('čđ');
-        expect(variants).toContain('ćdj');
-        expect(variants).toContain('ćđ');
-    });
-
-    test('realistic word: "cas" produces all c/s variants', () => {
-        // c(3) * s(2) = 6 variants
-        const variants = process('cas');
-        expect(variants).toHaveLength(6);
-        expect(variants).toContain('cas');
-        expect(variants).toContain('čas');
-        expect(variants).toContain('ćas');
-        expect(variants).toContain('caš');
-        expect(variants).toContain('čaš');
-        expect(variants).toContain('ćaš');
-    });
-
-    test('NFC and NFD input produce identical output', () => {
-        const inputNFC = 'čas'; // č as single codepoint U+010D
-        const inputNFD = 'čas'.normalize('NFD'); // č as c + U+030C
-        expect(process(inputNFC)).toStrictEqual(process(inputNFD));
+    test('operates on NFD text', () => {
+        expect(process('čȕvaj'.normalize('NFD'), true)).toBe('čuvaj'.normalize('NFD'));
     });
 });

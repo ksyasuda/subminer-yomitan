@@ -17,7 +17,10 @@
 
 import {basicTextProcessorOptions} from '../text-processors.js';
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+/** @typedef {{name: string, description: string, options: ('off'|'direct'|'inverse')[], process: (str: string, setting: 'off'|'direct'|'inverse') => string}} BidirectionalConversionPreprocessor */
+
+/** @type {BooleanTextProcessor} */
 export const removeRussianDiacritics = {
     name: 'Remove diacritics',
     description: 'A\u0301 → A, a\u0301 → a',
@@ -27,7 +30,7 @@ export const removeRussianDiacritics = {
     },
 };
 
-/** @type {import('language').BidirectionalConversionPreprocessor} */
+/** @type {BidirectionalConversionPreprocessor} */
 export const yoToE = {
     name: 'Convert "ё" to "е"',
     description: 'ё → е, Ё → Е and vice versa',

@@ -29,9 +29,29 @@ import {checkPopupPreviewURL} from '../pages/settings/popup-preview-controller.j
 import {ThemeController} from './theme-controller.js';
 
 const SUBMINER_POPUP_COMMAND_EVENT = 'subminer-yomitan-popup-command';
+/** @type {Set<Popup>} */
 const subminerPopupInstances = new Set();
 let subminerPopupCommandBridgeRegistered = false;
 
+/**
+ * @param {unknown} value
+ * @returns {value is Record<string, unknown>}
+ */
+function isRecord(value) {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is 'alt'|'ctrl'|'shift'|'meta'}
+ */
+function isModifier(value) {
+    return value === 'alt' || value === 'ctrl' || value === 'shift' || value === 'meta';
+}
+
+/**
+ * @returns {?Popup}
+ */
 function getActivePopupForSubminerCommand() {
     /** @type {?Popup} */
     let fallback = null;
@@ -45,25 +65,24 @@ function getActivePopupForSubminerCommand() {
     return fallback;
 }
 
+/**
+ * @returns {void}
+ */
 function registerSubminerPopupCommandBridge() {
     if (subminerPopupCommandBridgeRegistered) { return; }
     subminerPopupCommandBridgeRegistered = true;
     window.addEventListener(SUBMINER_POPUP_COMMAND_EVENT, (event) => {
         const popup = getActivePopupForSubminerCommand();
         if (popup === null) { return; }
-        const detail = event.detail;
-        if (typeof detail !== 'object' || detail === null) { return; }
+        const {detail} = /** @type {CustomEvent<unknown>} */ (event);
+        if (!isRecord(detail)) { return; }
 
         if (detail.type === 'simulateHotkey') {
             const key = detail.key;
             const rawModifiers = detail.modifiers;
             if (typeof key !== 'string' || !Array.isArray(rawModifiers)) { return; }
-            const modifiers = rawModifiers.filter((modifier) => (
-                modifier === 'alt' ||
-                modifier === 'ctrl' ||
-                modifier === 'shift' ||
-                modifier === 'meta'
-            ));
+            const modifiers = rawModifiers.filter(isModifier);
+            // eslint-disable-next-line no-underscore-dangle
             void popup._invokeSafe('displaySimulateHotkey', {key, modifiers});
             return;
         }
@@ -73,12 +92,8 @@ function registerSubminerPopupCommandBridge() {
             const key = detail.key;
             const rawModifiers = detail.modifiers;
             if (typeof code !== 'string' || typeof key !== 'string' || !Array.isArray(rawModifiers)) { return; }
-            const modifiers = rawModifiers.filter((modifier) => (
-                modifier === 'alt' ||
-                modifier === 'ctrl' ||
-                modifier === 'shift' ||
-                modifier === 'meta'
-            ));
+            const modifiers = rawModifiers.filter(isModifier);
+            // eslint-disable-next-line no-underscore-dangle
             void popup._invokeSafe('displayForwardKeyDown', {
                 key,
                 code,
@@ -89,20 +104,20 @@ function registerSubminerPopupCommandBridge() {
         }
 
         if (detail.type === 'mineSelected') {
+            // eslint-disable-next-line no-underscore-dangle
             void popup._invokeSafe('displayMineSelected', void 0);
             return;
         }
 
         if (detail.type === 'cycleAudioSource') {
             const direction = detail.direction === -1 ? -1 : 1;
+            // eslint-disable-next-line no-underscore-dangle
             void popup._invokeSafe('displayAudioCycleSource', {direction});
             return;
         }
 
-        if (detail.type === 'setVisible') {
-            if (detail.visible === false) {
-                popup.hide(false);
-            }
+        if (detail.type === 'setVisible' && detail.visible === false) {
+            popup.hide(false);
         }
     });
 }

@@ -54,6 +54,13 @@ import {TranslationTextReplacementsController} from './translation-text-replacem
 import {YomitanApiController} from './yomitan-api-controller.js';
 
 /**
+ * @typedef {object} SubminerYomitanSettingsAutomation
+ * @property {boolean} ready
+ * @property {(archiveBase64: string, fileName?: string) => Promise<void>} importDictionaryArchiveBase64
+ * @property {(dictionaryTitle: string) => Promise<void>} deleteDictionary
+ */
+
+/**
  * @param {GenericSettingController} genericSettingController
  */
 async function setupGenericSettingController(genericSettingController) {
@@ -113,9 +120,10 @@ await Application.main(true, async (application) => {
     const dictionaryImportController = new DictionaryImportController(settingsController, modalController, statusFooter);
     dictionaryImportController.prepare();
 
-    globalThis.__subminerYomitanSettingsAutomation = {
+    /** @type {SubminerYomitanSettingsAutomation} */
+    const subminerYomitanSettingsAutomation = {
         ready: false,
-        importDictionaryArchiveBase64: async (archiveBase64, fileName='dictionary.zip') => {
+        importDictionaryArchiveBase64: async (archiveBase64, fileName = 'dictionary.zip') => {
             const binary = atob(archiveBase64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; ++i) {
@@ -127,6 +135,7 @@ await Application.main(true, async (application) => {
             await dictionaryController.deleteDictionaryNow(dictionaryTitle);
         },
     };
+    Reflect.set(globalThis, '__subminerYomitanSettingsAutomation', subminerYomitanSettingsAutomation);
 
     const genericSettingController = new GenericSettingController(settingsController);
     preparePromises.push(setupGenericSettingController(genericSettingController));
@@ -199,6 +208,6 @@ await Application.main(true, async (application) => {
 
     await Promise.all(preparePromises);
 
-    globalThis.__subminerYomitanSettingsAutomation.ready = true;
+    subminerYomitanSettingsAutomation.ready = true;
     document.documentElement.dataset.loaded = 'true';
 });

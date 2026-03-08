@@ -707,7 +707,7 @@ export class Display extends EventDispatcher {
 
     /** @type {import('cross-frame-api').ApiHandler<'displayPopupMessage2'>} */
     _onDisplayPopupMessage2(message) {
-        return new Promise((resolve, reject) => {
+        return /** @type {Promise<import('display').DirectApiReturnAny>} */ (new Promise((resolve, reject) => {
             const {action, params} = message;
             invokeApiMapHandler(
                 this._directApiMap,
@@ -719,14 +719,14 @@ export class Display extends EventDispatcher {
                     if (typeof error !== 'undefined') {
                         reject(ExtensionError.deserialize(error));
                     } else {
-                        resolve(result.result);
+                        resolve(/** @type {import('display').DirectApiReturnAny} */ (result.result));
                     }
                 },
                 () => {
                     reject(new Error(`Invalid action: ${action}`));
                 },
             );
-        });
+        }));
     }
 
     /**
@@ -809,12 +809,12 @@ export class Display extends EventDispatcher {
      */
     _onMessageForwardKeyDown({key, code, modifiers, repeat = false}) {
         if (typeof key !== 'string' || typeof code !== 'string' || !Array.isArray(modifiers)) { return false; }
-        const normalizedModifiers = modifiers.filter((modifier) => (
+        const normalizedModifiers = new Set(modifiers.filter((modifier) => (
             modifier === 'alt' ||
             modifier === 'ctrl' ||
             modifier === 'shift' ||
             modifier === 'meta'
-        ));
+        )));
         const eventInit = {
             key,
             code,
@@ -822,10 +822,10 @@ export class Display extends EventDispatcher {
             bubbles: true,
             cancelable: true,
             composed: true,
-            altKey: normalizedModifiers.includes('alt'),
-            ctrlKey: normalizedModifiers.includes('ctrl'),
-            shiftKey: normalizedModifiers.includes('shift'),
-            metaKey: normalizedModifiers.includes('meta'),
+            altKey: normalizedModifiers.has('alt'),
+            ctrlKey: normalizedModifiers.has('ctrl'),
+            shiftKey: normalizedModifiers.has('shift'),
+            metaKey: normalizedModifiers.has('meta'),
         };
         document.dispatchEvent(new KeyboardEvent('keydown', eventInit));
         return true;

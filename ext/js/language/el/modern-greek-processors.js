@@ -17,7 +17,9 @@
 
 import {basicTextProcessorOptions} from '../text-processors.js';
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+
+/** @type {BooleanTextProcessor} */
 export const removeDoubleAcuteAccents = {
     name: 'Remove double acute accents',
     description: 'πρόσωπό → πρόσωπο',

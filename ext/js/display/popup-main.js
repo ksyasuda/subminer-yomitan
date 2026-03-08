@@ -52,10 +52,8 @@ await Application.main(true, async (application) => {
         if (event.ctrlKey || event.metaKey || event.altKey) { return; }
 
         const target = /** @type {?Element} */ (event.target instanceof Element ? event.target : null);
-        if (target !== null) {
-            if (target.closest('input, textarea, select, [contenteditable="true"]')) {
-                return;
-            }
+        if (target !== null && target.closest('input, textarea, select, [contenteditable="true"]')) {
+            return;
         }
 
         const code = event.code;
@@ -65,10 +63,9 @@ await Application.main(true, async (application) => {
             code === 'ArrowDown' ||
             code === 'ArrowUp';
         if (isPopupScrollKey) {
-            const scanningOptions = display.getOptions()?.scanning;
-            const scale = Number.isFinite(scanningOptions?.reducedMotionScrollingScale)
-                ? scanningOptions.reducedMotionScrollingScale
-                : 1;
+            const reducedMotionScrollingScale = display.getOptions()?.scanning.reducedMotionScrollingScale;
+            const scale = (typeof reducedMotionScrollingScale === 'number' && Number.isFinite(reducedMotionScrollingScale)) ? reducedMotionScrollingScale : 1;
+            // eslint-disable-next-line no-underscore-dangle
             display._scrollByPopupHeight(
                 code === 'KeyJ' || code === 'ArrowDown' ? 1 : -1,
                 scale,
@@ -79,6 +76,7 @@ await Application.main(true, async (application) => {
 
         if (code === 'KeyM') {
             if (event.repeat) { return; }
+            // eslint-disable-next-line no-underscore-dangle
             displayAnki._hotkeySaveAnkiNoteForSelectedEntry('0');
             event.preventDefault();
             return;
@@ -93,12 +91,14 @@ await Application.main(true, async (application) => {
 
         if (code === 'BracketLeft' || code === 'BracketRight') {
             if (event.repeat) { return; }
-            displayAudio._onMessageCycleAudioSource({direction: code === 'BracketLeft' ? 1 : -1});
+            // eslint-disable-next-line no-underscore-dangle
+            void displayAudio._onMessageCycleAudioSource({direction: code === 'BracketLeft' ? 1 : -1});
             event.preventDefault();
         }
     });
 
     document.addEventListener('subminer-display-mine-selected', () => {
+        // eslint-disable-next-line no-underscore-dangle
         displayAnki._hotkeySaveAnkiNoteForSelectedEntry('0');
     });
 

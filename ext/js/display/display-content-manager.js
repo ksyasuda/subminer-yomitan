@@ -20,6 +20,21 @@ import {EventListenerCollection} from '../core/event-listener-collection.js';
 import {base64ToArrayBuffer} from '../data/array-buffer-util.js';
 
 /**
+ * @param {unknown} value
+ * @returns {value is {content: string, mediaType: string}}
+ */
+function isMediaData(value) {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'content' in value &&
+        'mediaType' in value &&
+        typeof value.content === 'string' &&
+        typeof value.mediaType === 'string'
+    );
+}
+
+/**
  * The content manager which is used when generating HTML display content.
  */
 export class DisplayContentManager {
@@ -90,18 +105,18 @@ export class DisplayContentManager {
      */
     async executeMediaRequests() {
         const token = this._token;
-        for (const {path, dictionary, element} of this._loadMediaRequests) {
+        for (const requestValue of this._loadMediaRequests) {
+            /** @type {import('display-content-manager').LoadMediaRequest} */
+            const request = requestValue;
+            const {path, dictionary} = request;
+            if (!(request.element instanceof HTMLImageElement || request.element instanceof HTMLCanvasElement)) { continue; }
+            const element = /** @type {HTMLImageElement|HTMLCanvasElement} */ (request.element);
             try {
                 const data = await this._display.application.api.getMedia([{path, dictionary}]);
                 if (this._token !== token) { return; }
 
                 const item = data[0];
-                if (
-                    typeof item !== 'object' ||
-                    item === null ||
-                    typeof item.content !== 'string' ||
-                    typeof item.mediaType !== 'string'
-                ) {
+                if (!isMediaData(item)) {
                     this._setMediaElementState(element, 'load-error');
                     continue;
                 }
@@ -148,7 +163,8 @@ export class DisplayContentManager {
                     URL.revokeObjectURL(blobUrl);
                 };
                 image.src = blobUrl;
-            } catch (_e) {
+            } catch (error) {
+                void error;
                 if (this._token !== token) { return; }
                 this._setMediaElementState(element, 'load-error');
             }
@@ -163,8 +179,11 @@ export class DisplayContentManager {
      */
     async openMediaInTab(path, dictionary, window) {
         const data = await this._display.application.api.getMedia([{path, dictionary}]);
-        const buffer = base64ToArrayBuffer(data[0].content);
-        const blob = new Blob([buffer], {type: data[0].mediaType});
+        const item = data[0];
+        if (!isMediaData(item)) { return; }
+
+        const buffer = base64ToArrayBuffer(item.content);
+        const blob = new Blob([buffer], {type: item.mediaType});
         const blobUrl = URL.createObjectURL(blob);
         window.open(blobUrl, '_blank')?.focus();
     }
@@ -202,7 +221,7 @@ export class DisplayContentManager {
      * @param {'loaded'|'load-error'} state
      */
     _setMediaElementState(element, state) {
-        const link = element.closest('.gloss-image-link');
+        const link = /** @type {?HTMLElement} */ (element.closest('.gloss-image-link'));
         if (link === null) { return; }
         link.dataset.imageLoadState = state;
         if (state === 'loaded') {

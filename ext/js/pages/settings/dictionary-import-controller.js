@@ -457,7 +457,7 @@ export class DictionaryImportController {
      * @param {string} fileName
      * @returns {Promise<void>}
      */
-    async importDictionaryArchiveContent(archiveContent, fileName='dictionary.zip') {
+    async importDictionaryArchiveContent(archiveContent, fileName = 'dictionary.zip') {
         const file = new File([archiveContent], fileName, {type: 'application/zip'});
         const importProgressTracker = new ImportProgressTracker(this._getFileImportSteps(), 1);
         const errors = await this._importDictionaries(

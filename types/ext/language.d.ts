@@ -17,20 +17,29 @@
 
 import type {LanguageTransformDescriptor} from './language-transformer.js';
 
-export type TextProcessorFunction = (str: string) => string[];
+export type TextProcessorFunction<TSetting = unknown> = (str: string, setting: TSetting) => string;
 
 /**
  * Text pre- and post-processors are used during the translation process to create alternate versions of the input text to search for.
  * This is helpful when the input text doesn't exactly match the term or expression found in the database.
- * When a language has multiple processors, the translator will generate variants of the text by applying all combinations of the processors.
- * The process function returns an array of strings: all variants the processor wants to produce for the given input.
- * Returning the original string as the first element is conventional for optional processors (equivalent to an "off" option).
- * Always-on processors omit the original string from the result.
+ * When a language has multiple processors, the translator will generate variants of the text by applying all combinations of the processors and option values.
  */
-export type TextProcessor = {
+export type TextProcessor<TSetting = unknown> = {
     name: string;
     description: string;
-    process: TextProcessorFunction;
+    options: TSetting[];
+    process: TextProcessorFunction<TSetting>;
+};
+
+export type BooleanTextProcessor = TextProcessor<boolean>;
+
+export type BidirectionalConversionPreprocessor = TextProcessor<'off' | 'direct' | 'inverse'>;
+
+export type AlwaysOnTextProcessor = {
+    name: string;
+    description: string;
+    options: boolean[];
+    process: (str: string) => string;
 };
 
 export type ReadingNormalizer = (str: string) => string;
@@ -51,9 +60,9 @@ export type LanguageAndTransforms = {
     languageTransforms: LanguageTransformDescriptor;
 };
 
-export type TextProcessorWithId = {
+export type TextProcessorWithId<TSetting = unknown> = {
     id: string;
-    textProcessor: TextProcessor;
+    textProcessor: TextProcessor<TSetting> | AlwaysOnTextProcessor;
 };
 
 export type LanguageSummary = {

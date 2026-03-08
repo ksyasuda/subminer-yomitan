@@ -15,10 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @type {import('language').TextProcessorOptions<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+
+/** @type {boolean[]} */
 export const basicTextProcessorOptions = [false, true];
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const decapitalize = {
     name: 'Decapitalize text',
     description: 'CAPITALIZED TEXT → capitalized text',
@@ -26,7 +28,7 @@ export const decapitalize = {
     process: (str, setting) => (setting ? str.toLowerCase() : str),
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const capitalizeFirstLetter = {
     name: 'Capitalize first letter',
     description: 'lowercase text → Lowercase text',
@@ -39,7 +41,7 @@ export const capitalizeFirstLetter = {
  *          as it can result in undesirable normalization:
  *            - '\u9038'.normalize('NFD') => '\u9038' (逸)
  *            - '\ufa67'.normalize('NFD') => '\u9038' (逸 => 逸)
- * @type {import('language').TextProcessor<boolean>}
+ * @type {BooleanTextProcessor}
  */
 export const removeAlphabeticDiacritics = {
     name: 'Remove Alphabetic Diacritics',

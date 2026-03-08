@@ -89,8 +89,8 @@ export function setPermissionsGranted(permissions, shouldHave) {
 export function getAllPermissions() {
     // Electron workaround - chrome.permissions.getAll() not available
     return Promise.resolve({
-        origins: ["<all_urls>"],
-        permissions: ["clipboardWrite", "storage", "unlimitedStorage", "scripting", "contextMenus"]
+        origins: ['<all_urls>'],
+        permissions: ['clipboardWrite', 'storage', 'unlimitedStorage', 'scripting', 'contextMenus'],
     });
 }
 

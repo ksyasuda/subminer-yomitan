@@ -17,6 +17,8 @@
 
 import {basicTextProcessorOptions} from './text-processors.js';
 
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+
 /** @type {import('CJK-util').CodepointRange} */
 const CJK_UNIFIED_IDEOGRAPHS_RANGE = [0x4e00, 0x9fff];
 /** @type {import('CJK-util').CodepointRange} */
@@ -129,7 +131,7 @@ export function normalizeRadicals(text) {
     return result;
 }
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const normalizeRadicalCharacters = {
     name: 'Normalize radical characters',
     description: '⼀ → 一 (U+2F00 → U+4E00)',

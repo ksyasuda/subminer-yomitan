@@ -30,9 +30,11 @@ const re5 = new RegExp(`(?<!q)(u)([aeiou])${TONE}`, 'i');
 const re6 = new RegExp(`(?<!g)(i)([aeiouy])${TONE}`, 'i');
 const re7 = new RegExp(`(?<!q)([ou])([aeoy])${TONE}(?!\\w)`, 'i');
 
+/** @typedef {{name: string, description: string, options: ('old'|'new'|'off')[], process: (str: string, setting: 'old'|'new'|'off') => string}} VietnameseDiacriticProcessor */
+
 /**
  * This function is adapted from https://github.com/enricobarzetti/viet_text_tools/blob/master/viet_text_tools/__init__.py
- * @type {import('language').TextProcessor<'old'|'new'|'off'>}
+ * @type {VietnameseDiacriticProcessor}
  */
 export const normalizeDiacritics = {
     name: 'Normalize Diacritics',

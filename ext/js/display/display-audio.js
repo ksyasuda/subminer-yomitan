@@ -308,7 +308,9 @@ export class DisplayAudio {
                 this._audioCycleSourceIndex !== null &&
                 this._audioCycleSourceIndex >= 0 &&
                 this._audioCycleSourceIndex < sources.length
-            ) ? this._audioCycleSourceIndex : 0;
+            ) ?
+                this._audioCycleSourceIndex :
+                0;
             source = sources[fallbackIndex] ?? null;
             this._audioCycleSourceIndex = fallbackIndex;
         }

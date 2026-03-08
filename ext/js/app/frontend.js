@@ -29,14 +29,28 @@ import {TextSourceRange} from '../dom/text-source-range.js';
 import {TextScanner} from '../language/text-scanner.js';
 
 const SUBMINER_FRONTEND_COMMAND_EVENT = 'subminer-yomitan-popup-command';
+/** @type {Set<Frontend>} */
 const subminerFrontendInstances = new Set();
 let subminerFrontendCommandBridgeRegistered = false;
 
+/**
+ * @param {unknown} value
+ * @returns {value is Record<string, unknown>}
+ */
+function isRecord(value) {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
+ * @returns {?Frontend}
+ */
 function getActiveFrontendForSubminerCommand() {
     /** @type {?Frontend} */
     let fallback = null;
     for (const frontend of subminerFrontendInstances) {
-        if (frontend._textScanner?.isEnabled?.()) {
+        // eslint-disable-next-line no-underscore-dangle
+        const textScanner = frontend._textScanner;
+        if (textScanner.isEnabled()) {
             return frontend;
         }
         if (fallback === null) {
@@ -46,6 +60,9 @@ function getActiveFrontendForSubminerCommand() {
     return fallback;
 }
 
+/**
+ * @returns {void}
+ */
 function registerSubminerFrontendCommandBridge() {
     if (subminerFrontendCommandBridgeRegistered) { return; }
     subminerFrontendCommandBridgeRegistered = true;
@@ -53,10 +70,11 @@ function registerSubminerFrontendCommandBridge() {
     window.addEventListener(SUBMINER_FRONTEND_COMMAND_EVENT, (event) => {
         const frontend = getActiveFrontendForSubminerCommand();
         if (frontend === null) { return; }
-        const detail = event.detail;
-        if (typeof detail !== 'object' || detail === null) { return; }
+        const {detail} = /** @type {CustomEvent<unknown>} */ (event);
+        if (!isRecord(detail)) { return; }
 
         if (detail.type === 'scanSelectedText') {
+            // eslint-disable-next-line no-underscore-dangle
             frontend._onApiScanSelectedText();
         }
     });

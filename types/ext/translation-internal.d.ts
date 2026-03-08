@@ -82,4 +82,4 @@ export type ReadingNormalizerMap = Map<
     Language.ReadingNormalizer
 >;
 
-export type TextCache = Map<string, Map<string, string[]>>;
+export type TextCache = Map<string, Map<string, Map<unknown, string>>>;

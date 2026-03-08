@@ -15,15 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import {basicTextProcessorOptions} from '../text-processors.js';
 
-/** @type {import('language').TextProcessor} */
+/** @type {import('language').BooleanTextProcessor} */
 export const removeApostrophedWords = {
     name: 'Remove common apostrophed words',
     description: 'dell\'Italia > Italia, c\'erano > erano',
-    process: (str) => [
-        str,
-        removeApostrophedWordsImpl(str),
-    ],
+    options: basicTextProcessorOptions,
+    process: (str, setting) => (setting ? removeApostrophedWordsImpl(str) : str),
 };
 
 /**

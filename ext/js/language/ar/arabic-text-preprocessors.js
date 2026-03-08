@@ -17,6 +17,8 @@
 
 import {basicTextProcessorOptions} from '../text-processors.js';
 
+/** @typedef {{name: string, description: string, options: boolean[], process: (text: string, setting: boolean) => string}} BooleanTextProcessor */
+
 const optionalDiacritics = [
     '\u0618', // Small Fatha
     '\u0619', // Small Damma
@@ -38,7 +40,7 @@ const optionalDiacritics = [
 
 const diacriticsRegex = new RegExp(`[${optionalDiacritics.join('')}]`, 'g');
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const removeArabicScriptDiacritics = {
     name: 'Remove diacritics',
     description: 'وَلَدَ → ولد',
@@ -48,7 +50,7 @@ export const removeArabicScriptDiacritics = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const removeTatweel = {
     name: 'Remove tatweel characters',
     description: 'لـكن → لكن',
@@ -58,7 +60,7 @@ export const removeTatweel = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const normalizeUnicode = {
     name: 'Normalize unicode',
     description: 'ﻴ → ي',
@@ -68,7 +70,7 @@ export const normalizeUnicode = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const addHamzaTop = {
     name: 'Add Hamza to top of Alif',
     description: 'اكبر → أكبر',
@@ -78,7 +80,7 @@ export const addHamzaTop = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const addHamzaBottom = {
     name: 'Add Hamza to bottom of Alif',
     description: 'اسلام → إسلام',
@@ -88,7 +90,7 @@ export const addHamzaBottom = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const convertAlifMaqsuraToYaa = {
     name: 'Convert Alif Maqsura to Yaa',
     description: 'فى → في',
@@ -98,7 +100,7 @@ export const convertAlifMaqsuraToYaa = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const convertHaToTaMarbuta = {
     name: 'Convert final Ha to Ta Marbuta',
     description: 'لغه → لغة',

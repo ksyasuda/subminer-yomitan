@@ -573,13 +573,24 @@ export class Translator {
             if (textReplacement === null) { continue; }
             variantsMap.set(this._applyTextReplacements(text, textReplacement), [['Text Replacement' + ' ' + id]]);
         }
-        for (const {id, textProcessor: {process, options}} of textProcessors) {
+        for (const textProcessorWithIdValue of textProcessors) {
+            /** @type {import('language').TextProcessorWithId<unknown>} */
+            const textProcessorWithId = textProcessorWithIdValue;
+            const {id} = textProcessorWithId;
+            /** @type {(text: string, setting: unknown) => string} */
+            const process = textProcessorWithId.textProcessor.process;
+            /** @type {unknown[]} */
+            const options = textProcessorWithId.textProcessor.options;
             /** @type {import('translation-internal').VariantAndTextProcessorRuleChainCandidatesMap} */
             const newVariantsMap = new Map();
-            for (const [variant, currentPreprocessorRuleChainCandidates] of variantsMap) {
+            for (const [variant, currentPreprocessorRuleChainCandidatesValue] of variantsMap) {
+                /** @type {import('translation-internal').TextProcessorRuleChainCandidate[]} */
+                const currentPreprocessorRuleChainCandidates = currentPreprocessorRuleChainCandidatesValue;
                 for (const option of options) {
                     const processed = this._getProcessedText(textCache, variant, id, option, process);
                     const existingCandidates = newVariantsMap.get(processed);
+                    /** @type {import('translation-internal').TextProcessorRuleChainCandidate[]} */
+                    const updatedCandidates = currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id]);
 
                     // Ignore if applying the textProcessor doesn't change the source
                     if (processed === variant) {
@@ -589,9 +600,9 @@ export class Translator {
                             newVariantsMap.set(processed, existingCandidates);
                         }
                     } else if (typeof existingCandidates === 'undefined') {
-                        newVariantsMap.set(processed, currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id]));
+                        newVariantsMap.set(processed, updatedCandidates);
                     } else {
-                        newVariantsMap.set(processed, [...existingCandidates, ...currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id])]);
+                        newVariantsMap.set(processed, [...existingCandidates, ...updatedCandidates]);
                     }
                 }
             }
@@ -605,7 +616,7 @@ export class Translator {
      * @param {string} text
      * @param {string} id
      * @param {unknown} setting
-     * @param {import('language').TextProcessorFunction} process
+     * @param {(text: string, setting: unknown) => string} process
      * @returns {string}
      */
     _getProcessedText(textCache, text, id, setting, process) {
@@ -615,6 +626,7 @@ export class Translator {
             textCache.set(text, level1);
         }
 
+        /** @type {Map<unknown, string> | undefined} */
         let level2 = level1.get(id);
         if (!level2) {
             level2 = new Map();

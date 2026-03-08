@@ -67,12 +67,26 @@ import {combineYiddishLigatures, removeYiddishDiacritics} from './yi/yiddish-tex
 import {yiddishTransforms} from './yi/yiddish-transforms.js';
 import {isStringPartiallyChinese, normalizePinyin} from './zh/chinese.js';
 
+/**
+ * @typedef {{
+ *   iso: string,
+ *   iso639_3: string,
+ *   name: string,
+ *   exampleText: string,
+ *   isTextLookupWorthy?: (text: string) => boolean,
+ *   readingNormalizer?: (text: string) => string,
+ *   textPreprocessors?: Record<string, import('language').TextProcessor<any>|import('language').AlwaysOnTextProcessor>,
+ *   textPostprocessors?: Record<string, import('language').TextProcessor<any>|import('language').AlwaysOnTextProcessor>,
+ *   languageTransforms?: import('language-transformer').LanguageTransformDescriptor,
+ * }} LanguageDescriptor
+ */
+
 const capitalizationPreprocessors = {
     decapitalize,
     capitalizeFirstLetter,
 };
 
-/** @type {import('language-descriptors').LanguageDescriptorAny[]} */
+/** @type {LanguageDescriptor[]} */
 const languageDescriptors = [
     {
         iso: 'aii',
@@ -552,7 +566,7 @@ const languageDescriptors = [
     },
 ];
 
-/** @type {Map<string, import('language-descriptors').LanguageDescriptorAny>} */
+/** @type {Map<string, LanguageDescriptor>} */
 export const languageDescriptorMap = new Map();
 for (const languageDescriptor of languageDescriptors) {
     languageDescriptorMap.set(languageDescriptor.iso, languageDescriptor);

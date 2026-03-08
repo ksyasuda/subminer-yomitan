@@ -170,6 +170,12 @@ export type DirectApiSurface = {
         params: void;
         return: void;
     };
+    displayAudioCycleSource: {
+        params: {
+            direction?: number;
+        };
+        return: boolean;
+    };
     displaySetOptionsContext: {
         params: {
             optionsContext: Settings.OptionsContext;
@@ -210,6 +216,26 @@ export type DirectApiSurface = {
             value: boolean;
         };
         return: void;
+    };
+    displaySimulateHotkey: {
+        params: {
+            key: string;
+            modifiers: unknown[];
+        };
+        return: boolean;
+    };
+    displayForwardKeyDown: {
+        params: {
+            key: string;
+            code: string;
+            modifiers: unknown[];
+            repeat?: boolean;
+        };
+        return: boolean;
+    };
+    displayMineSelected: {
+        params: void;
+        return: boolean;
     };
 };
 

@@ -29,7 +29,11 @@ import {
 } from './japanese.js';
 import {convertVariants} from '../../../lib/kanji-processor.js';
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+/** @typedef {{name: string, description: string, options: ('off'|'direct'|'inverse')[], process: (str: string, setting: 'off'|'direct'|'inverse') => string}} BidirectionalConversionPreprocessor */
+/** @typedef {{name: string, description: string, options: [collapseEmphatic: boolean, collapseEmphaticFull: boolean][], process: (str: string, setting: [collapseEmphatic: boolean, collapseEmphaticFull: boolean]) => string}} CollapseEmphaticProcessor */
+
+/** @type {BooleanTextProcessor} */
 export const convertHalfWidthCharacters = {
     name: 'Convert half width characters to full width',
     description: 'ﾖﾐﾁｬﾝ → ヨミチャン',
@@ -37,7 +41,7 @@ export const convertHalfWidthCharacters = {
     process: (str, setting) => (setting ? convertHalfWidthKanaToFullWidth(str) : str),
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const alphabeticToHiragana = {
     name: 'Convert alphabetic characters to hiragana',
     description: 'yomichan → よみちゃん',
@@ -45,7 +49,7 @@ export const alphabeticToHiragana = {
     process: (str, setting) => (setting ? convertAlphabeticToKana(str) : str),
 };
 
-/** @type {import('language').BidirectionalConversionPreprocessor} */
+/** @type {BidirectionalConversionPreprocessor} */
 export const alphanumericWidthVariants = {
     name: 'Convert between alphabetic width variants',
     description: 'ｙｏｍｉｔａｎ → yomitan and vice versa',
@@ -62,7 +66,7 @@ export const alphanumericWidthVariants = {
     },
 };
 
-/** @type {import('language').BidirectionalConversionPreprocessor} */
+/** @type {BidirectionalConversionPreprocessor} */
 export const convertHiraganaToKatakana = {
     name: 'Convert hiragana to katakana',
     description: 'よみちゃん → ヨミチャン and vice versa',
@@ -79,7 +83,7 @@ export const convertHiraganaToKatakana = {
     },
 };
 
-/** @type {import('language').TextProcessor<[collapseEmphatic: boolean, collapseEmphaticFull: boolean]>} */
+/** @type {CollapseEmphaticProcessor} */
 export const collapseEmphaticSequences = {
     name: 'Collapse emphatic character sequences',
     description: 'すっっごーーい → すっごーい / すごい',
@@ -93,7 +97,7 @@ export const collapseEmphaticSequences = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const normalizeCombiningCharacters = {
     name: 'Normalize combining characters',
     description: 'ド → ド (U+30C8 U+3099 → U+30C9)',
@@ -101,7 +105,7 @@ export const normalizeCombiningCharacters = {
     process: (str, setting) => (setting ? normalizeCombiningCharactersFunction(str) : str),
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const normalizeCJKCompatibilityCharacters = {
     name: 'Normalize CJK Compatibility Characters',
     description: '㌀ → アパート',
@@ -109,7 +113,7 @@ export const normalizeCJKCompatibilityCharacters = {
     process: (str, setting) => (setting ? normalizeCJKCompatibilityCharactersFunction(str) : str),
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {BooleanTextProcessor} */
 export const standardizeKanji = {
     name: 'Convert kanji variants to their modern standard form',
     description: '萬 → 万',

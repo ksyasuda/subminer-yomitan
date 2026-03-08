@@ -17,7 +17,9 @@
 
 import {basicTextProcessorOptions} from '../text-processors.js';
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+
+/** @type {BooleanTextProcessor} */
 export const removeSerboCroatianAccentMarks = {
     name: 'Remove diacritics',
     description: 'A\u0301 → A, a\u0301 → a',

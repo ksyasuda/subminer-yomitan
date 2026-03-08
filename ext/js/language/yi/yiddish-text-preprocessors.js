@@ -15,6 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/** @typedef {{lig: string, split: string}} Ligature */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string) => string}} AlwaysOnTextProcessor */
+
+/** @type {Ligature[]} */
 const ligatures = [
     {lig: '\u05f0', split: '\u05d5' + '\u05d5'}, // װ -> וו
     {lig: '\u05f1', split: '\u05d5' + '\u05d9'}, // ױ -> וי
@@ -25,7 +29,7 @@ const ligatures = [
     {lig: '\ufb2f', split: '\u05d0' + '\u05b8'}, // Komets alef
 ];
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {AlwaysOnTextProcessor} */
 export const combineYiddishLigatures = {
     name: 'Combine Ligatures',
     description: 'וו → װ',
@@ -38,7 +42,7 @@ export const combineYiddishLigatures = {
     },
 };
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @type {AlwaysOnTextProcessor} */
 export const removeYiddishDiacritics = {
     name: 'Remove Diacritics',
     description: 'פאת → פֿאָתּ',

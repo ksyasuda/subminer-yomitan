@@ -17,7 +17,9 @@
 
 import {basicTextProcessorOptions, removeAlphabeticDiacritics} from '../text-processors.js';
 
-/** @type {import('language').TextProcessor<boolean>} */
+/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+
+/** @type {BooleanTextProcessor} */
 export const convertLatinToGreek = {
     name: 'Convert latin characters to greek',
     description: 'a → α, A → Α, b → β, B → Β, etc.',
@@ -34,6 +36,7 @@ export const convertLatinToGreek = {
 export function latinToGreek(latin) {
     latin = removeAlphabeticDiacritics.process(latin, true);
 
+    /** @type {Record<string, string>} */
     const singleMap = {
         a: 'α',
         b: 'β',
@@ -77,6 +80,7 @@ export function latinToGreek(latin) {
         Ō: 'Ω',
     };
 
+    /** @type {Record<string, string>} */
     const doubleMap = {
         th: 'θ',
         ph: 'φ',
