@@ -101,6 +101,7 @@ export class DisplayAudio {
         this._display.registerDirectMessageHandlers([
             ['displayAudioClearAutoPlayTimer', this._onMessageClearAutoPlayTimer.bind(this)],
             ['displayAudioCycleSource', this._onMessageCycleAudioSource.bind(this)],
+            ['displayAudioPlayCurrent', this._onMessagePlayCurrentAudio.bind(this)],
         ]);
         /* eslint-enable @stylistic/no-multi-spaces */
         this._display.on('optionsUpdated', this._onOptionsUpdated.bind(this));
@@ -280,6 +281,61 @@ export class DisplayAudio {
     /** @type {import('display').DirectApiHandler<'displayAudioClearAutoPlayTimer'>} */
     _onMessageClearAutoPlayTimer() {
         this.clearAutoPlayTimer();
+    }
+
+    /**
+     * @returns {Promise<boolean>}
+     */
+    async _onMessagePlayCurrentAudio() {
+        /** @type {import('display-audio').AudioSource[]} */
+        const configuredSources = this._audioSources.filter((source) => source.isInOptions);
+        const sources = configuredSources.length > 0 ? configuredSources : this._audioSources;
+        if (sources.length === 0) { return false; }
+
+        const dictionaryEntryIndex = this._display.selectedIndex;
+        const headwordIndex = 0;
+        const headword = this._getHeadword(dictionaryEntryIndex, headwordIndex);
+        if (headword === null) { return false; }
+        const {term, reading} = headword;
+
+        const primaryCardAudio = this._getPrimaryCardAudio(term, reading);
+        let source = null;
+        let subIndex = 0;
+        if (primaryCardAudio !== null) {
+            source = sources.find((item) => item.index === primaryCardAudio.index) ?? null;
+            if (primaryCardAudio.subIndex !== null) {
+                subIndex = primaryCardAudio.subIndex;
+            }
+        }
+        if (source === null) {
+            const fallbackIndex = (
+                this._audioCycleSourceIndex !== null &&
+                this._audioCycleSourceIndex >= 0 &&
+                this._audioCycleSourceIndex < sources.length
+            ) ?
+                this._audioCycleSourceIndex :
+                0;
+            source = sources[fallbackIndex] ?? null;
+            this._audioCycleSourceIndex = fallbackIndex;
+            if (source !== null) {
+                const cachedSubIndex = this._audioCycleAudioInfoIndexMap.get(source.index);
+                if (typeof cachedSubIndex === 'number') {
+                    subIndex = cachedSubIndex;
+                }
+            }
+        }
+        if (source === null) { return false; }
+
+        const {valid, subIndex: resolvedSubIndex} = await this._playAudio(
+            dictionaryEntryIndex,
+            headwordIndex,
+            [source],
+            subIndex,
+        );
+        if (valid) {
+            this._audioCycleAudioInfoIndexMap.set(source.index, resolvedSubIndex);
+        }
+        return valid;
     }
 
     /**

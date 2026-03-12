@@ -227,6 +227,7 @@ export class Display extends EventDispatcher {
             ['displaySimulateHotkey',    this._onMessageSimulateHotkey.bind(this)],
             ['displayForwardKeyDown',    this._onMessageForwardKeyDown.bind(this)],
             ['displayMineSelected',      this._onMessageMineSelected.bind(this)],
+            ['displayScrollBy',          this._onMessageScrollBy.bind(this)],
         ]);
         this.registerWindowMessageHandlers([
             ['displayExtensionUnloaded', this._onMessageExtensionUnloaded.bind(this)],
@@ -836,6 +837,23 @@ export class Display extends EventDispatcher {
      */
     _onMessageMineSelected() {
         document.dispatchEvent(new CustomEvent('subminer-display-mine-selected'));
+        return true;
+    }
+
+    /**
+     * @param {{deltaX: number, deltaY: number}} details
+     * @returns {boolean}
+     */
+    _onMessageScrollBy({deltaX, deltaY}) {
+        if (
+            typeof deltaX !== 'number' ||
+            typeof deltaY !== 'number' ||
+            !Number.isFinite(deltaX) ||
+            !Number.isFinite(deltaY)
+        ) {
+            return false;
+        }
+        this._windowScroll.to(this._windowScroll.x + deltaX, this._windowScroll.y + deltaY);
         return true;
     }
 

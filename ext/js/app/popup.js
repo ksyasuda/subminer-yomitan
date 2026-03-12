@@ -116,6 +116,20 @@ function registerSubminerPopupCommandBridge() {
             return;
         }
 
+        if (detail.type === 'playCurrentAudio') {
+            // eslint-disable-next-line no-underscore-dangle
+            void popup._invokeSafe('displayAudioPlayCurrent', void 0);
+            return;
+        }
+
+        if (detail.type === 'scrollBy') {
+            const deltaX = typeof detail.deltaX === 'number' ? detail.deltaX : 0;
+            const deltaY = typeof detail.deltaY === 'number' ? detail.deltaY : 0;
+            // eslint-disable-next-line no-underscore-dangle
+            void popup._invokeSafe('displayScrollBy', {deltaX, deltaY});
+            return;
+        }
+
         if (detail.type === 'setVisible' && detail.visible === false) {
             popup.hide(false);
         }

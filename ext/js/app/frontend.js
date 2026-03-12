@@ -76,6 +76,12 @@ function registerSubminerFrontendCommandBridge() {
         if (detail.type === 'scanSelectedText') {
             // eslint-disable-next-line no-underscore-dangle
             frontend._onApiScanSelectedText();
+            return;
+        }
+
+        if (detail.type === 'clearActiveTextSource') {
+            // eslint-disable-next-line no-underscore-dangle
+            frontend._textScanner.setCurrentTextSource(null);
         }
     });
 }
