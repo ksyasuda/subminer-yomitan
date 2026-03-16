@@ -70,4 +70,7 @@ await Application.main(true, async (application) => {
     display.initializeState();
 
     document.documentElement.dataset.loaded = 'true';
+
+    // @ts-ignore
+    window.__subminerAddNote = (/** @type {string} */ word) => displayAnki.addNoteFromWord(word);
 });

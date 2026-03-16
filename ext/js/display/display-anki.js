@@ -133,6 +133,71 @@ export class DisplayAnki {
     }
 
     /**
+     * Programmatically look up a word in dictionaries and create an Anki note.
+     * Used by SubMiner's stats page to mine words without UI interaction.
+     * @param {string} word
+     * @returns {Promise<number | null>} The note ID, or null if creation failed.
+     */
+    async addNoteFromWord(word) {
+        const optionsContext = this._display.getOptionsContext();
+        const findResult = await this._display.application.api.termsFind({
+            text: word,
+            details: {matchType: 'exact', deinflect: true},
+            optionsContext,
+        });
+        if (!findResult.dictionaryEntries || findResult.dictionaryEntries.length === 0) {
+            throw new Error(`No dictionary entries found for "${word}"`);
+        }
+
+        const dictionaryEntry = findResult.dictionaryEntries[0];
+        const options = this._display.getOptions();
+        if (!options) { throw new Error('Options not loaded'); }
+
+        const cardFormats = options.anki.cardFormats;
+        if (!cardFormats || cardFormats.length === 0) {
+            throw new Error('No Anki card formats configured');
+        }
+
+        if (!this._ankiFieldTemplates) {
+            await this._updateAnkiFieldTemplates(options);
+        }
+        const template = this._ankiFieldTemplates;
+        if (typeof template !== 'string') { throw new Error('Anki field templates not loaded'); }
+
+        const dictionaryStylesMap = this._ankiNoteBuilder.getDictionaryStylesMap(this._dictionaries);
+
+        const context = {
+            url: 'subminer://stats',
+            documentTitle: 'SubMiner Stats',
+            query: word,
+            fullQuery: word,
+            sentence: {text: word, offset: 0},
+        };
+
+        const {note, errors} = await this._ankiNoteBuilder.createNote({
+            dictionaryEntry,
+            cardFormat: cardFormats[0],
+            context,
+            template,
+            tags: this._noteTags,
+            duplicateScope: this._duplicateScope,
+            duplicateScopeCheckAllModels: this._duplicateScopeCheckAllModels,
+            resultOutputMode: this._resultOutputMode,
+            glossaryLayoutMode: this._glossaryLayoutMode,
+            compactTags: this._compactTags,
+            mediaOptions: null,
+            dictionaryStylesMap,
+        });
+
+        if (errors && errors.length > 0) {
+            const msg = errors.map((e) => e.message || String(e)).join('; ');
+            throw new Error(`Note creation errors: ${msg}`);
+        }
+
+        return await this._display.application.api.addAnkiNote(note);
+    }
+
+    /**
      * @param {import('dictionary').DictionaryEntry} dictionaryEntry
      * @returns {Promise<import('display-anki').LogData>}
      */
