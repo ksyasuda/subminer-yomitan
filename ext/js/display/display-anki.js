@@ -139,19 +139,24 @@ export class DisplayAnki {
      * @returns {Promise<number | null>} The note ID, or null if creation failed.
      */
     async addNoteFromWord(word) {
+        let options = this._display.getOptions();
+        if (!options) {
+            await this._display.updateOptions();
+            options = this._display.getOptions();
+        }
+        if (!options) { throw new Error('Options not loaded'); }
+
         const optionsContext = this._display.getOptionsContext();
-        const findResult = await this._display.application.api.termsFind({
-            text: word,
-            details: {matchType: 'exact', deinflect: true},
+        const findResult = await this._display.application.api.termsFind(
+            word,
+            {matchType: 'exact', deinflect: true},
             optionsContext,
-        });
+        );
         if (!findResult.dictionaryEntries || findResult.dictionaryEntries.length === 0) {
             throw new Error(`No dictionary entries found for "${word}"`);
         }
 
         const dictionaryEntry = findResult.dictionaryEntries[0];
-        const options = this._display.getOptions();
-        if (!options) { throw new Error('Options not loaded'); }
 
         const cardFormats = options.anki.cardFormats;
         if (!cardFormats || cardFormats.length === 0) {
