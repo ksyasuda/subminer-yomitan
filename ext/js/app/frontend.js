@@ -29,6 +29,7 @@ import {TextSourceRange} from '../dom/text-source-range.js';
 import {TextScanner} from '../language/text-scanner.js';
 
 const SUBMINER_FRONTEND_COMMAND_EVENT = 'subminer-yomitan-popup-command';
+const SUBMINER_LOOKUP_EVENT = 'subminer-yomitan-lookup';
 /** @type {Set<Frontend>} */
 const subminerFrontendInstances = new Set();
 let subminerFrontendCommandBridgeRegistered = false;
@@ -451,6 +452,7 @@ export class Frontend {
      */
     _onSearchSuccess({type, dictionaryEntries, sentence, inputInfo: {eventType, detail: inputInfoDetail}, textSource, optionsContext, detail, pageTheme}) {
         this._stopClearSelectionDelayed();
+        window.dispatchEvent(new CustomEvent(SUBMINER_LOOKUP_EVENT));
         let focus = (eventType === 'mouseMove');
         if (typeof inputInfoDetail === 'object' && inputInfoDetail !== null) {
             const focus2 = inputInfoDetail.focus;
