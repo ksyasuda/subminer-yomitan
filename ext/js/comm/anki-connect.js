@@ -117,12 +117,17 @@ export class AnkiConnect {
 
     /**
      * @param {import('anki').Note} note
+     * @param {number[]} [subminerDuplicateNoteIds]
      * @returns {Promise<?import('anki').NoteId>}
      */
-    async addNote(note) {
+    async addNote(note, subminerDuplicateNoteIds) {
         if (!this._enabled) { return null; }
         await this._checkVersion();
-        const result = await this._invoke('addNote', {note});
+        const params = {note};
+        if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
+            params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;
+        }
+        const result = await this._invoke('addNote', params);
         if (result !== null && typeof result !== 'number') {
             throw this._createUnexpectedResultError('number|null', result);
         }

@@ -136,7 +136,7 @@ export class DisplayAnki {
      * Programmatically look up a word in dictionaries and create an Anki note.
      * Used by SubMiner's stats page to mine words without UI interaction.
      * @param {string} word
-     * @returns {Promise<number | null>} The note ID, or null if creation failed.
+     * @returns {Promise<{noteId: number | null, duplicateNoteIds: number[]}>} Created note info.
      */
     async addNoteFromWord(word) {
         let options = this._display.getOptions();
@@ -199,7 +199,12 @@ export class DisplayAnki {
             throw new Error(`Note creation errors: ${msg}`);
         }
 
-        return await this._display.application.api.addAnkiNote(note);
+        const noteInfoList = await this._display.application.api.getAnkiNoteInfo([note], false);
+        const duplicateNoteIds = Array.isArray(noteInfoList) && noteInfoList.length > 0 ?
+            [...new Set((noteInfoList[0]?.noteIds ?? []).filter((id) => id !== INVALID_NOTE_ID))].sort((a, b) => a - b) :
+            [];
+        const noteId = await this._display.application.api.addAnkiNote(note, duplicateNoteIds);
+        return {noteId, duplicateNoteIds};
     }
 
     /**
@@ -692,7 +697,7 @@ export class DisplayAnki {
      * @param {number} dictionaryEntryIndex
      * @param {number} cardFormatIndex
      */
-    async _saveAnkiNote(dictionaryEntryIndex, cardFormatIndex) {
+    _saveAnkiNote(dictionaryEntryIndex, cardFormatIndex) {
         const dictionaryEntries = this._display.dictionaryEntries;
         const dictionaryEntryDetails = this._dictionaryEntryDetails;
         if (!(
@@ -710,10 +715,27 @@ export class DisplayAnki {
         const {requirements} = details;
 
         const button = this._saveButtonFind(dictionaryEntryIndex, cardFormatIndex);
-        if (button === null || button.disabled) { return; }
+        if (button === null || button.disabled || button.dataset.pendingSave === 'true') { return; }
 
         this._hideErrorNotification(true);
+        this._setSaveButtonPending(button, true);
+        void this._saveAnkiNoteTask(
+            dictionaryEntry,
+            dictionaryEntryIndex,
+            cardFormatIndex,
+            requirements,
+            button,
+        );
+    }
 
+    /**
+     * @param {import('dictionary').DictionaryEntry} dictionaryEntry
+     * @param {number} dictionaryEntryIndex
+     * @param {number} cardFormatIndex
+     * @param {import('anki-note-builder').Requirement[]} requirements
+     * @param {HTMLButtonElement} button
+     */
+    async _saveAnkiNoteTask(dictionaryEntry, dictionaryEntryIndex, cardFormatIndex, requirements, button) {
         /** @type {Error[]} */
         const allErrors = [];
         const progressIndicatorVisible = this._display.progressIndicatorVisible;
@@ -734,6 +756,7 @@ export class DisplayAnki {
             allErrors.push(toError(e));
         } finally {
             progressIndicatorVisible.clearOverride(overrideToken);
+            this._setSaveButtonPending(button, false);
         }
 
         if (allErrors.length > 0) {
@@ -741,6 +764,19 @@ export class DisplayAnki {
         } else {
             this._hideErrorNotification(true);
         }
+    }
+
+    /**
+     * @param {HTMLButtonElement} button
+     * @param {boolean} pending
+     */
+    _setSaveButtonPending(button, pending) {
+        if (pending) {
+            button.dataset.pendingSave = 'true';
+            return;
+        }
+
+        delete button.dataset.pendingSave;
     }
 
     /**

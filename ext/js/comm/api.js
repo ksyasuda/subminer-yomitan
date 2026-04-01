@@ -98,10 +98,15 @@ export class API {
 
     /**
      * @param {import('api').ApiParam<'addAnkiNote', 'note'>} note
+     * @param {number[]} [subminerDuplicateNoteIds]
      * @returns {Promise<import('api').ApiReturn<'addAnkiNote'>>}
      */
-    addAnkiNote(note) {
-        return this._invoke('addAnkiNote', {note});
+    addAnkiNote(note, subminerDuplicateNoteIds) {
+        const params = {note};
+        if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
+            params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;
+        }
+        return this._invoke('addAnkiNote', params);
     }
 
     /**
