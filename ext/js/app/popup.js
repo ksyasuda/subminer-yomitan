@@ -29,6 +29,8 @@ import {checkPopupPreviewURL} from '../pages/settings/popup-preview-controller.j
 import {ThemeController} from './theme-controller.js';
 
 const SUBMINER_POPUP_COMMAND_EVENT = 'subminer-yomitan-popup-command';
+const SUBMINER_POPUP_HOST_ATTRIBUTE = 'data-subminer-yomitan-popup-host';
+const SUBMINER_POPUP_VISIBLE_ATTRIBUTE = 'data-subminer-yomitan-popup-visible';
 /** @type {Set<Popup>} */
 const subminerPopupInstances = new Set();
 let subminerPopupCommandBridgeRegistered = false;
@@ -730,6 +732,8 @@ export class Popup extends EventDispatcher {
         if (usePopupShadowDom && typeof this._frame.attachShadow === 'function') {
             const container = document.createElement('div');
             container.style.setProperty('all', 'initial', 'important');
+            container.setAttribute(SUBMINER_POPUP_HOST_ATTRIBUTE, 'true');
+            container.setAttribute(SUBMINER_POPUP_VISIBLE_ATTRIBUTE, 'false');
             const shadow = container.attachShadow({mode: 'closed', delegatesFocus: true});
             shadow.appendChild(this._frame);
 
@@ -744,6 +748,12 @@ export class Popup extends EventDispatcher {
             this._container = this._frame;
             this._shadow = null;
         }
+
+        this._container.setAttribute(SUBMINER_POPUP_HOST_ATTRIBUTE, 'true');
+        this._container.setAttribute(
+            SUBMINER_POPUP_VISIBLE_ATTRIBUTE,
+            this.isVisibleSync() ? 'true' : 'false',
+        );
 
         await this._injectStyles();
     }
@@ -863,6 +873,7 @@ export class Popup extends EventDispatcher {
         if (this._visibleValue === value) { return; }
         this._visibleValue = value;
         this._frame.style.setProperty('visibility', value ? 'visible' : 'hidden', 'important');
+        this._container.setAttribute(SUBMINER_POPUP_VISIBLE_ATTRIBUTE, value ? 'true' : 'false');
         void this._invokeSafe('displayVisibilityChanged', {value});
 
         // Dispatch custom events for popup visibility (Electron integration)
