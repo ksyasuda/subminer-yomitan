@@ -57,6 +57,7 @@ import {YomitanApiController} from './yomitan-api-controller.js';
  * @typedef {object} SubminerYomitanSettingsAutomation
  * @property {boolean} ready
  * @property {(archiveBase64: string, fileName?: string) => Promise<void>} importDictionaryArchiveBase64
+ * @property {(archiveUrl: string) => Promise<void>} importDictionaryArchiveUrl
  * @property {(dictionaryTitle: string) => Promise<void>} deleteDictionary
  */
 
@@ -130,6 +131,12 @@ await Application.main(true, async (application) => {
                 bytes[i] = binary.charCodeAt(i);
             }
             await dictionaryImportController.importDictionaryArchiveContent(bytes.buffer, fileName);
+        },
+        importDictionaryArchiveUrl: async (archiveUrl) => {
+            const errors = await dictionaryImportController.importFilesFromURLs(archiveUrl, null, null);
+            if (errors.length > 0) {
+                throw errors[0];
+            }
         },
         deleteDictionary: async (dictionaryTitle) => {
             await dictionaryController.deleteDictionaryNow(dictionaryTitle);

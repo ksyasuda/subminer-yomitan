@@ -437,14 +437,15 @@ export class DictionaryImportController {
     /**
      * @param {string} text
      * @param {import('settings-controller').ProfilesDictionarySettings} profilesDictionarySettings
-     * @param {import('settings-controller').ImportDictionaryDoneCallback} onImportDone
+     * @param {?import('settings-controller').ImportDictionaryDoneCallback} onImportDone
+     * @returns {Promise<Error[]>}
      */
     async importFilesFromURLs(text, profilesDictionarySettings, onImportDone) {
         const urls = text.split('\n');
 
         const importProgressTracker = new ImportProgressTracker(this._getUrlImportSteps(), urls.length);
         const onProgress = importProgressTracker.onProgress.bind(importProgressTracker);
-        void this._importDictionaries(
+        return await this._importDictionaries(
             this._generateFilesFromUrls(urls, onProgress),
             profilesDictionarySettings,
             onImportDone,
