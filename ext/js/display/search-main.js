@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025  Yomitan Authors
+ * Copyright (C) 2023-2026  Yomitan Authors
  * Copyright (C) 2019-2022  Yomichan Authors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -71,6 +71,5 @@ await Application.main(true, async (application) => {
 
     document.documentElement.dataset.loaded = 'true';
 
-    // @ts-ignore
-    window.__subminerAddNote = (/** @type {string} */ word) => displayAnki.addNoteFromWord(word);
+    Reflect.set(window, '__subminerAddNote', (/** @type {string} */ word) => displayAnki.addNoteFromWord(word));
 });

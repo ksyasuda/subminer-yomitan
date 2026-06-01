@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025  Yomitan Authors
+ * Copyright (C) 2024-2026  Yomitan Authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  */
 
 import {basicTextProcessorOptions} from '../text-processors.js';
+import {convertVariants} from '../../../lib/kanji-processor.js';
 import {convertAlphabeticToKana} from './japanese-wanakana.js';
 import {
     collapseEmphaticSequences as collapseEmphaticSequencesFunction,
@@ -27,7 +28,6 @@ import {
     normalizeCJKCompatibilityCharacters as normalizeCJKCompatibilityCharactersFunction,
     normalizeCombiningCharacters as normalizeCombiningCharactersFunction,
 } from './japanese.js';
-import {convertVariants} from '../../../lib/kanji-processor.js';
 
 /** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
 /** @typedef {{name: string, description: string, options: ('off'|'direct'|'inverse')[], process: (str: string, setting: 'off'|'direct'|'inverse') => string}} BidirectionalConversionPreprocessor */

@@ -88,6 +88,7 @@
                                     "showAdvanced",
                                     "showDebug",
                                     "popupDisplayMode",
+                                    "popupFullWidthPosition",
                                     "popupWidth",
                                     "popupHeight",
                                     "popupHorizontalOffset",
@@ -179,6 +180,11 @@
                                         "type": "string",
                                         "enum": ["default", "full-width"],
                                         "default": "default"
+                                    },
+                                    "popupFullWidthPosition": {
+                                        "type": "string",
+                                        "enum": ["top", "above-cursor", "bottom"],
+                                        "default": "bottom"
                                     },
                                     "popupWidth": {
                                         "type": "number",
@@ -319,7 +325,7 @@
                                     },
                                     "frequencyDisplayMode": {
                                         "type": "string",
-                                        "enum": ["tags", "tags-grouped", "split-tags", "split-tags-grouped", "inline-list", "list"],
+                                        "enum": ["tags", "tags-grouped", "split-tags", "split-tags-grouped", "inline-list", "list", "list-bordered"],
                                         "default": "split-tags-grouped"
                                     },
                                     "termDisplayMode": {
@@ -1001,7 +1007,8 @@
                                     "noteGuiMode",
                                     "apiKey",
                                     "downloadTimeout",
-                                    "forceSync"
+                                    "forceSync",
+                                    "noteDupeCheckFirst"
                                 ],
                                 "properties": {
                                     "enable": {
@@ -1175,6 +1182,10 @@
                                         "minimum": 0
                                     },
                                     "forceSync": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "noteDupeCheckFirst": {
                                         "type": "boolean",
                                         "default": false
                                     }

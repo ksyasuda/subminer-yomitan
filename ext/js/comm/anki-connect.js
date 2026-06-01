@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025  Yomitan Authors
+ * Copyright (C) 2023-2026  Yomitan Authors
  * Copyright (C) 2016-2022  Yomichan Authors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -123,6 +123,7 @@ export class AnkiConnect {
     async addNote(note, subminerDuplicateNoteIds) {
         if (!this._enabled) { return null; }
         await this._checkVersion();
+        /** @type {{note: import('anki').Note, subminerDuplicateNoteIds?: number[]}} */
         const params = {note};
         if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
             params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;

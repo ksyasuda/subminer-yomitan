@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025  Yomitan Authors
+ * Copyright (C) 2023-2026  Yomitan Authors
  * Copyright (C) 2016-2022  Yomichan Authors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@ import {logErrorLevelToNumber} from '../core/log-utilities.js';
 import {log} from '../core/log.js';
 import {isObjectNotArray} from '../core/object-utilities.js';
 import {clone, deferPromise, promiseTimeout} from '../core/utilities.js';
-import {generateAnkiNoteMediaFileName, INVALID_NOTE_ID, isNoteDataValid} from '../data/anki-util.js';
+import {generateAnkiNoteMediaFileName, INVALID_NOTE_ID, isNoteDataValid, mediaFileNameHashOrTimestamp} from '../data/anki-util.js';
 import {arrayBufferToBase64} from '../data/array-buffer-util.js';
 import {OptionsUtil} from '../data/options-util.js';
 import {getAllPermissions, hasPermissions, hasRequiredPermissionsForOptions} from '../data/permissions-util.js';
@@ -204,6 +204,7 @@ export class Backend {
             ['openInfoPage', this._onCommandOpenInfoPage.bind(this)],
             ['openSettingsPage', this._onCommandOpenSettingsPage.bind(this)],
             ['openSearchPage', this._onCommandOpenSearchPage.bind(this)],
+            ['openSearchPageCurrentTab', this._onCommandOpenSearchPageCurrentTab.bind(this)],
             ['openPopupWindow', this._onCommandOpenPopupWindow.bind(this)],
         ]));
 
@@ -560,15 +561,15 @@ export class Backend {
     }
 
     /** @type {import('api').ApiHandler<'parseText'>} */
-    async _onApiParseText({text, optionsContext, scanLength, useInternalParser, useMecabParser}) {
+    async _onApiParseText({text, optionsContext, scanLength, useInternalParser, useMecabParser, useAllFrequencyDictionaries}) {
         /** @type {import('api').ParseTextResultItem[]} */
         const results = [];
 
         const [internalResults, mecabResults] = await Promise.all([
             useInternalParser ?
                 (Array.isArray(text) ?
-                    Promise.all(text.map((t) => this._textParseScanning(t, scanLength, optionsContext))) :
-                    Promise.all([this._textParseScanning(text, scanLength, optionsContext)])) :
+                    Promise.all(text.map((t) => this._textParseScanning(t, scanLength, optionsContext, useAllFrequencyDictionaries))) :
+                    Promise.all([this._textParseScanning(text, scanLength, optionsContext, useAllFrequencyDictionaries)])) :
                 null,
             useMecabParser ?
                 (Array.isArray(text) ?
@@ -1197,7 +1198,8 @@ export class Backend {
             const parsedUrl = new URL(url);
             const parsedBaseUrl = `${parsedUrl.origin}${parsedUrl.pathname}`;
             const parsedMode = parsedUrl.searchParams.get('mode');
-            return parsedBaseUrl === baseUrl && (parsedMode === mode || (!parsedMode && mode === 'existingOrNewTab'));
+            const modeIsNotSpecial = mode === 'existingOrNewTab' || mode === 'existingOrCurrentTab';
+            return parsedBaseUrl === baseUrl && (parsedMode === mode || (!parsedMode && modeIsNotSpecial));
         };
 
         const openInTab = async () => {
@@ -1225,12 +1227,32 @@ export class Backend {
                 }
                 await this._createTab(queryUrl);
                 return;
+            case 'existingOrCurrentTab':
+                try {
+                    if (await openInTab()) { return; }
+                } catch (e) {
+                    // NOP
+                }
+                await this._updateTab(queryUrl);
+                return;
             case 'newTab':
                 await this._createTab(queryUrl);
                 return;
             case 'popup':
                 return;
         }
+    }
+
+    /**
+     * @param {undefined|{mode: import('backend').Mode, query?: string}} params
+     */
+    async _onCommandOpenSearchPageCurrentTab(params) {
+        /** @type {{mode: import('backend').Mode, query?: string}} */
+        const newParams = {mode: 'existingOrCurrentTab'};
+        if (typeof params === 'object' && params !== null) {
+            newParams.query = params.query;
+        }
+        await this._onCommandOpenSearchPage(newParams);
     }
 
     /**
@@ -1679,9 +1701,10 @@ export class Backend {
      * @param {string} text
      * @param {number} scanLength
      * @param {import('settings').OptionsContext} optionsContext
+     * @param {import('api').ApiParam<'parseText', 'useAllFrequencyDictionaries'>} useAllFrequencyDictionaries
      * @returns {Promise<import('api').ParseTextLine[]>}
      */
-    async _textParseScanning(text, scanLength, optionsContext) {
+    async _textParseScanning(text, scanLength, optionsContext, useAllFrequencyDictionaries) {
         /** @type {import('translator').FindTermsMode} */
         const mode = 'simple';
         const options = this._getProfileOptions(optionsContext, false);
@@ -1689,6 +1712,7 @@ export class Backend {
         /** @type {import('api').FindTermsDetails} */
         const details = {matchType: 'exact', deinflect: true};
         const findTermsOptions = this._getTranslatorFindTermsOptions(mode, details, options);
+        if (useAllFrequencyDictionaries) { findTermsOptions.useAllFrequencyDictionaries = true; }
         /** @type {import('api').ParseTextLine[]} */
         const results = [];
         let previousUngroupedSegment = null;
@@ -1730,7 +1754,7 @@ export class Backend {
                                     if (src.matchType !== 'exact') { continue; }
                                     validSources.push(src);
                                 }
-                                if (validSources.length > 0) { validHeadwords.push({term: headword.term, reading: headword.reading, sources: validSources}); }
+                                if (validSources.length > 0) { validHeadwords.push({term: headword.term, reading: headword.reading, sources: validSources, frequencies: dictionaryEntry.frequencies.filter((f) => f.headwordIndex === headword.headwordIndex)}); }
                             }
                             if (validHeadwords.length > 0) { trimmedHeadwords.push(validHeadwords); }
                         }
@@ -1776,18 +1800,25 @@ export class Backend {
             /** @type {import('api').ParseTextLine[]} */
             const result = [];
             for (const line of lines) {
-                for (const {term, reading, source} of line) {
+                for (const {term, reading, source, lemma, lemma_reading} of line) {
                     const termParts = [];
+                    let isFirstPart = true;
                     for (const {text: text2, reading: reading2} of distributeFuriganaInflected(
                         term.length > 0 ? term : source,
                         jpConvertKatakanaToHiragana(reading),
                         source,
                     )) {
-                        termParts.push({text: text2, reading: reading2});
+                        /** @type {import('api').ParseTextSegment} */
+                        const termPart = {text: text2, reading: reading2};
+                        if (isFirstPart) {
+                            termPart.lemma = lemma;
+                            termPart.lemmaReading = jpConvertKatakanaToHiragana(lemma_reading);
+                            isFirstPart = false;
+                        }
+                        termParts.push(termPart);
                     }
                     result.push(termParts);
                 }
-                result.push([{text: '\n', reading: ''}]);
             }
             results.push([name, result]);
         }
@@ -2310,6 +2341,7 @@ export class Backend {
         const {windowId} = tab;
 
         let token = null;
+        const errors = [];
         try {
             if (typeof tabId === 'number' && typeof frameId === 'number') {
                 const action = 'frontendSetAllVisibleOverride';
@@ -2317,16 +2349,29 @@ export class Backend {
                 token = await this._sendMessageTabPromise(tabId, {action, params}, {frameId});
             }
 
-            return await new Promise((resolve, reject) => {
-                chrome.tabs.captureVisibleTab(windowId, {format, quality}, (result) => {
-                    const e = chrome.runtime.lastError;
-                    if (e) {
-                        reject(new Error(e.message));
-                    } else {
-                        resolve(result);
-                    }
+            try {
+                return await new Promise((resolve, reject) => {
+                    chrome.tabs.captureVisibleTab(windowId, {format, quality}, (result) => {
+                        const e = chrome.runtime.lastError;
+                        if (e) {
+                            reject(new Error(e.message));
+                        } else {
+                            resolve(result);
+                        }
+                    });
                 });
-            });
+            } catch (e) {
+                errors.push(e);
+            }
+
+            // Fallback for some Firefox. Usually `chrome.tabs.captureVisibleTab` works but occasionally it doesn't
+            try {
+                return await browser.tabs.captureVisibleTab(windowId, {format, quality});
+            } catch (e) {
+                errors.push(e);
+            }
+
+            throw new Error('Failed to screenshot, errors: [' + errors.join(', ') + ']');
         } finally {
             if (token !== null) {
                 const action = 'frontendClearAllVisibleOverride';
@@ -2447,7 +2492,7 @@ export class Backend {
 
         let extension = contentType !== null ? getFileExtensionFromAudioMediaType(contentType) : null;
         if (extension === null) { extension = '.mp3'; }
-        let fileName = generateAnkiNoteMediaFileName('yomitan_audio', extension, timestamp);
+        let fileName = await mediaFileNameHashOrTimestamp('yomitan_audio', data, extension, null, timestamp);
         fileName = fileName.replace(/\]/g, '');
         return await ankiConnect.storeMediaFile(fileName, data);
     }
@@ -2541,11 +2586,7 @@ export class Backend {
             if (media !== null) {
                 const {content, mediaType} = media;
                 const extension = getFileExtensionFromImageMediaType(mediaType);
-                fileName = generateAnkiNoteMediaFileName(
-                    `yomitan_dictionary_media_${i + 1}`,
-                    extension !== null ? extension : '',
-                    timestamp,
-                );
+                fileName = await mediaFileNameHashOrTimestamp('yomitan_dictionary_media', content, extension, i, timestamp);
                 try {
                     fileName = await ankiConnect.storeMediaFile(fileName, content);
                 } catch (e) {
@@ -2707,6 +2748,7 @@ export class Backend {
             enabledDictionaryMap,
             excludeDictionaryDefinitions,
             language,
+            useAllFrequencyDictionaries: false,
         };
     }
 
@@ -2849,6 +2891,23 @@ export class Backend {
     }
 
     /**
+     * @param {string} url
+     * @returns {Promise<chrome.tabs.Tab>}
+     */
+    _updateTab(url) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.update({url}, (tab) => {
+                const e = chrome.runtime.lastError;
+                if (e || !tab) {
+                    reject(new Error(e ? e.message : 'No active tab to update.'));
+                } else {
+                    resolve(tab);
+                }
+            });
+        });
+    }
+
+    /**
      * @param {number} tabId
      * @returns {Promise<chrome.tabs.Tab>}
      */
@@ -2938,6 +2997,7 @@ export class Backend {
     _normalizeOpenSettingsPageMode(mode, defaultValue) {
         switch (mode) {
             case 'existingOrNewTab':
+            case 'existingOrCurrentTab':
             case 'newTab':
             case 'popup':
                 return mode;
