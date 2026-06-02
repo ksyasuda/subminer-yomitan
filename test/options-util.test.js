@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025  Yomitan Authors
+ * Copyright (C) 2023-2026  Yomitan Authors
  * Copyright (C) 2020-2022  Yomichan Authors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -43,6 +43,7 @@ function createProfileOptionsTestData1() {
             maxResults: 32,
             showAdvanced: false,
             popupDisplayMode: 'default',
+            popupFullWidthPosition: 'bottom',
             popupWidth: 400,
             popupHeight: 250,
             popupHorizontalOffset: 0,
@@ -275,6 +276,7 @@ function createProfileOptionsUpdatedTestData1() {
             showAdvanced: false,
             showDebug: false,
             popupDisplayMode: 'default',
+            popupFullWidthPosition: 'bottom',
             popupWidth: 400,
             popupHeight: 250,
             popupHorizontalOffset: 0,
@@ -548,6 +550,7 @@ function createProfileOptionsUpdatedTestData1() {
             apiKey: '',
             downloadTimeout: 0,
             forceSync: false,
+            noteDupeCheckFirst: false,
         },
         sentenceParsing: {
             scanExtent: 200,
@@ -704,7 +707,7 @@ function createOptionsUpdatedTestData1() {
             },
         ],
         profileCurrent: 0,
-        version: 74,
+        version: 76,
         global: {
             database: {
                 prefixWildcardsSupported: false,
@@ -2015,6 +2018,77 @@ describe('OptionsUtil', () => {
             </li>
         {{~/each~}}
         </ul>
+    {{~/if~}}
+{{/inline}}
+`.trimStart(),
+            },
+            {
+                oldVersion: 74,
+                newVersion: 75,
+                old: `
+{{#*inline "frequency-harmonic-rank"}}
+    {{~#if (op "===" definition.frequencyHarmonic -1) ~}}
+        9999999
+    {{~else ~}}
+        {{definition.frequencyHarmonic}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-harmonic-occurrence"}}
+    {{~#if (op "===" definition.frequencyHarmonic -1) ~}}
+        0
+    {{~else ~}}
+        {{definition.frequencyHarmonic}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-average-rank"}}
+    {{~#if (op "===" definition.frequencyAverage -1) ~}}
+        9999999
+    {{~else ~}}
+        {{definition.frequencyAverage}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-average-occurrence"}}
+    {{~#if (op "===" definition.frequencyAverage -1) ~}}
+        0
+    {{~else ~}}
+        {{definition.frequencyAverage}}
+    {{~/if~}}
+{{/inline}}
+`.trimStart(),
+
+                expected: `
+{{#*inline "frequency-harmonic-rank"}}
+    {{~#if (op "===" definition.frequencyHarmonicRank -1) ~}}
+        9999999
+    {{~else ~}}
+        {{definition.frequencyHarmonicRank}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-harmonic-occurrence"}}
+    {{~#if (op "===" definition.frequencyHarmonicOccurrence -1) ~}}
+        0
+    {{~else ~}}
+        {{definition.frequencyHarmonicOccurrence}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-average-rank"}}
+    {{~#if (op "===" definition.frequencyAverageRank -1) ~}}
+        9999999
+    {{~else ~}}
+        {{definition.frequencyAverageRank}}
+    {{~/if~}}
+{{/inline}}
+
+{{#*inline "frequency-average-occurrence"}}
+    {{~#if (op "===" definition.frequencyAverageOccurrence -1) ~}}
+        0
+    {{~else ~}}
+        {{definition.frequencyAverageOccurrence}}
     {{~/if~}}
 {{/inline}}
 `.trimStart(),

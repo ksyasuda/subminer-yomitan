@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025  Yomitan Authors
+ * Copyright (C) 2025-2026  Yomitan Authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {basicTextProcessorOptions, removeAlphabeticDiacritics} from '../text-processors.js';
-
-/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
-
-/** @type {BooleanTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const convertLatinToGreek = {
     name: 'Convert latin characters to greek',
     description: 'a → α, A → Α, b → β, B → Β, etc.',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => {
-        return setting ? latinToGreek(str) : str;
-    },
+    process: (str) => [str, latinToGreek(str)],
 };
 
 /**
@@ -34,9 +27,8 @@ export const convertLatinToGreek = {
  * @returns {string}
  */
 export function latinToGreek(latin) {
-    latin = removeAlphabeticDiacritics.process(latin, true);
+    latin = latin.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    /** @type {Record<string, string>} */
     const singleMap = {
         a: 'α',
         b: 'β',
@@ -80,7 +72,6 @@ export function latinToGreek(latin) {
         Ō: 'Ω',
     };
 
-    /** @type {Record<string, string>} */
     const doubleMap = {
         th: 'θ',
         ph: 'φ',

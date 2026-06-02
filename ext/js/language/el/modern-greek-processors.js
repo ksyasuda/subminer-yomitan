@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025  Yomitan Authors
+ * Copyright (C) 2025-2026  Yomitan Authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {basicTextProcessorOptions} from '../text-processors.js';
-
-/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
-
-/** @type {BooleanTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const removeDoubleAcuteAccents = {
     name: 'Remove double acute accents',
     description: 'πρόσωπό → πρόσωπο',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => {
-        return setting ? removeDoubleAcuteAccentsImpl(str) : str;
-    },
+    process: (str) => [str, removeDoubleAcuteAccentsImpl(str)],
 };
 
 /**

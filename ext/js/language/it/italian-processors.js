@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025  Yomitan Authors
+ * Copyright (C) 2024-2026  Yomitan Authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,14 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {basicTextProcessorOptions} from '../text-processors.js';
 
-/** @type {import('language').BooleanTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const removeApostrophedWords = {
     name: 'Remove common apostrophed words',
     description: 'dell\'Italia > Italia, c\'erano > erano',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => (setting ? removeApostrophedWordsImpl(str) : str),
+    process: (str) => [
+        str,
+        removeApostrophedWordsImpl(str),
+    ],
 };
 
 /**

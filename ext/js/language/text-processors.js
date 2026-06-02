@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025  Yomitan Authors
+ * Copyright (C) 2024-2026  Yomitan Authors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,25 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @typedef {{name: string, description: string, options: boolean[], process: (str: string, setting: boolean) => string}} BooleanTextProcessor */
+export const MAX_PROCESS_VARIANTS = 4096;
 
-/** @type {boolean[]} */
-export const basicTextProcessorOptions = [false, true];
-
-/** @type {BooleanTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const decapitalize = {
     name: 'Decapitalize text',
     description: 'CAPITALIZED TEXT → capitalized text',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => (setting ? str.toLowerCase() : str),
+    process: (str) => [str, str.toLowerCase()],
 };
 
-/** @type {BooleanTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const capitalizeFirstLetter = {
     name: 'Capitalize first letter',
     description: 'lowercase text → Lowercase text',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => (setting ? str.charAt(0).toUpperCase() + str.slice(1) : str),
+    process: (str) => [str, str.charAt(0).toUpperCase() + str.slice(1)],
 };
 
 /**
@@ -41,11 +36,10 @@ export const capitalizeFirstLetter = {
  *          as it can result in undesirable normalization:
  *            - '\u9038'.normalize('NFD') => '\u9038' (逸)
  *            - '\ufa67'.normalize('NFD') => '\u9038' (逸 => 逸)
- * @type {BooleanTextProcessor}
+ * @type {import('language').TextProcessor}
  */
 export const removeAlphabeticDiacritics = {
     name: 'Remove Alphabetic Diacritics',
     description: 'ἄήé -> αηe',
-    options: basicTextProcessorOptions,
-    process: (str, setting) => (setting ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : str),
+    process: (str) => [str, str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')],
 };
