@@ -40,6 +40,7 @@ import {frenchTransforms} from './fr/french-transforms.js';
 import {irishTransforms} from './ga/irish-transforms.js';
 import {convertLatinToGreek} from './grc/ancient-greek-processors.js';
 import {ancientGreekTransforms} from './grc/ancient-greek-transforms.js';
+import {removeApostrophedWords} from './it/italian-processors.js';
 import {
     alphabeticToHiragana,
     alphanumericWidthVariants,
@@ -59,7 +60,7 @@ import {processDiphtongs} from './la/latin-text-preprocessors.js';
 import {latinTransforms} from './la/latin-transforms.js';
 import {removeRussianDiacritics, yoToE} from './ru/russian-text-preprocessors.js';
 import {oldIrishTransforms} from './sga/old-irish-transforms.js';
-import {removeSerboCroatianAccentMarks} from './sh/serbo-croatian-text-preprocessors.js';
+import {addSerboCroatianDiacritics, removeSerboCroatianAccentMarks} from './sh/serbo-croatian-text-preprocessors.js';
 import {albanianTransforms} from './sq/albanian-transforms.js';
 import {capitalizeFirstLetter, decapitalize, removeAlphabeticDiacritics} from './text-processors.js';
 import {tagalogTransforms} from './tl/tagalog-transforms.js';
@@ -69,26 +70,12 @@ import {combineYiddishLigatures, removeYiddishDiacritics} from './yi/yiddish-tex
 import {yiddishTransforms} from './yi/yiddish-transforms.js';
 import {isStringPartiallyChinese, normalizePinyin} from './zh/chinese.js';
 
-/**
- * @typedef {{
- *   iso: string,
- *   iso639_3: string,
- *   name: string,
- *   exampleText: string,
- *   isTextLookupWorthy?: (text: string) => boolean,
- *   readingNormalizer?: (text: string) => string,
- *   textPreprocessors?: Record<string, import('language').TextProcessor<any>|import('language').AlwaysOnTextProcessor>,
- *   textPostprocessors?: Record<string, import('language').TextProcessor<any>|import('language').AlwaysOnTextProcessor>,
- *   languageTransforms?: import('language-transformer').LanguageTransformDescriptor,
- * }} LanguageDescriptor
- */
-
 const capitalizationPreprocessors = {
     decapitalize,
     capitalizeFirstLetter,
 };
 
-/** @type {LanguageDescriptor[]} */
+/** @type {import('language-descriptors').LanguageDescriptorAny[]} */
 const languageDescriptors = [
     {
         iso: 'xxx',
@@ -135,6 +122,13 @@ const languageDescriptors = [
             convertHaToTaMarbuta,
         },
         languageTransforms: arabicTransforms,
+    },
+    {
+        iso: 'be',
+        iso639_3: 'bel',
+        name: 'Belarusian',
+        exampleText: 'чытаць',
+        textPreprocessors: capitalizationPreprocessors,
     },
     {
         iso: 'bg',
@@ -319,6 +313,7 @@ const languageDescriptors = [
         textPreprocessors: {
             ...capitalizationPreprocessors,
             removeAlphabeticDiacritics,
+            removeApostrophedWords,
         },
     },
     {
@@ -481,6 +476,7 @@ const languageDescriptors = [
         textPreprocessors: {
             ...capitalizationPreprocessors,
             removeSerboCroatianAccentMarks,
+            addSerboCroatianDiacritics,
         },
     },
     {
@@ -590,7 +586,7 @@ const languageDescriptors = [
     },
 ];
 
-/** @type {Map<string, LanguageDescriptor>} */
+/** @type {Map<string, import('language-descriptors').LanguageDescriptorAny>} */
 export const languageDescriptorMap = new Map();
 for (const languageDescriptor of languageDescriptors) {
     languageDescriptorMap.set(languageDescriptor.iso, languageDescriptor);

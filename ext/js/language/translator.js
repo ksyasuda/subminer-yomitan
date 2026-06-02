@@ -23,6 +23,7 @@ import {isCodePointKorean} from './ko/korean.js';
 import {LanguageTransformer} from './language-transformer.js';
 import {getAllLanguageReadingNormalizers, getAllLanguageTextProcessors} from './languages.js';
 import {MultiLanguageTransformer} from './multi-language-transformer.js';
+import {MAX_PROCESS_VARIANTS} from './text-processors.js';
 import {isCodePointChinese} from './zh/chinese.js';
 
 const SUBMINER_DICTIONARY_TITLE_PREFIX = 'SubMiner Character Dictionary';
@@ -569,7 +570,7 @@ export class Translator {
 
     /**
      * @param {string} text
-     * @param {import('language').TextProcessorWithId<unknown>[]} textProcessors
+     * @param {import('language').TextProcessorWithId[]} textProcessors
      * @param {(import('translation').FindTermsTextReplacement[] | null)[]} textReplacements
      * @param {import('translation-internal').TextCache} textCache
      * @returns {import('translation-internal').VariantAndTextProcessorRuleChainCandidatesMap}
@@ -584,24 +585,12 @@ export class Translator {
             if (textReplacement === null) { continue; }
             variantsMap.set(this._applyTextReplacements(text, textReplacement), [['Text Replacement' + ' ' + id]]);
         }
-        for (const textProcessorWithIdValue of textProcessors) {
-            /** @type {import('language').TextProcessorWithId<unknown>} */
-            const textProcessorWithId = textProcessorWithIdValue;
-            const {id} = textProcessorWithId;
-            /** @type {(text: string, setting: unknown) => string} */
-            const process = textProcessorWithId.textProcessor.process;
-            /** @type {unknown[]} */
-            const options = textProcessorWithId.textProcessor.options;
+        for (const {id, textProcessor: {process}} of textProcessors) {
             /** @type {import('translation-internal').VariantAndTextProcessorRuleChainCandidatesMap} */
             const newVariantsMap = new Map();
-            for (const [variant, currentPreprocessorRuleChainCandidatesValue] of variantsMap) {
-                /** @type {import('translation-internal').TextProcessorRuleChainCandidate[]} */
-                const currentPreprocessorRuleChainCandidates = currentPreprocessorRuleChainCandidatesValue;
-                for (const option of options) {
-                    const processed = this._getProcessedText(textCache, variant, id, option, process);
+            for (const [variant, currentPreprocessorRuleChainCandidates] of variantsMap) {
+                for (const processed of this._getProcessedTexts(textCache, variant, id, process)) {
                     const existingCandidates = newVariantsMap.get(processed);
-                    /** @type {import('translation-internal').TextProcessorRuleChainCandidate[]} */
-                    const updatedCandidates = currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id]);
 
                     // Ignore if applying the textProcessor doesn't change the source
                     if (processed === variant) {
@@ -611,9 +600,9 @@ export class Translator {
                             newVariantsMap.set(processed, existingCandidates);
                         }
                     } else if (typeof existingCandidates === 'undefined') {
-                        newVariantsMap.set(processed, updatedCandidates);
+                        newVariantsMap.set(processed, currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id]));
                     } else {
-                        newVariantsMap.set(processed, [...existingCandidates, ...updatedCandidates]);
+                        newVariantsMap.set(processed, [...existingCandidates, ...currentPreprocessorRuleChainCandidates.map((candidate) => [...candidate, id])]);
                     }
                 }
             }
@@ -626,31 +615,27 @@ export class Translator {
      * @param {import('translation-internal').TextCache} textCache
      * @param {string} text
      * @param {string} id
-     * @param {unknown} setting
-     * @param {(text: string, setting: unknown) => string} process
-     * @returns {string}
+     * @param {import('language').TextProcessorFunction} process
+     * @returns {string[]}
      */
-    _getProcessedText(textCache, text, id, setting, process) {
+    _getProcessedTexts(textCache, text, id, process) {
         let level1 = textCache.get(text);
         if (!level1) {
             level1 = new Map();
             textCache.set(text, level1);
         }
 
-        /** @type {Map<unknown, string> | undefined} */
-        let level2 = level1.get(id);
-        if (!level2) {
-            level2 = new Map();
-            level1.set(id, level2);
+        let results = level1.get(id);
+        if (typeof results === 'undefined') {
+            results = process(text);
+            if (results.length > MAX_PROCESS_VARIANTS) {
+                // eslint-disable-next-line no-console
+                console.warn(`Text processor "${id}" produced ${results.length} variants for input "${text}"; truncating to ${MAX_PROCESS_VARIANTS}`);
+                results = results.slice(0, MAX_PROCESS_VARIANTS);
+            }
+            level1.set(id, results);
         }
-
-        if (!level2.has(setting)) {
-            text = process(text, setting);
-            level2.set(setting, text);
-        } else {
-            text = level2.get(setting) || '';
-        }
-        return text;
+        return results;
     }
 
     /**

@@ -15,39 +15,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** @typedef {{lig: string, split: string}} Ligature */
-/** @typedef {{name: string, description: string, options: boolean[], process: (str: string) => string}} AlwaysOnTextProcessor */
-
-/** @type {Ligature[]} */
 const ligatures = [
     {lig: '\u05f0', split: '\u05d5' + '\u05d5'}, // װ -> וו
     {lig: '\u05f1', split: '\u05d5' + '\u05d9'}, // ױ -> וי
     {lig: '\u05f2', split: '\u05d9' + '\u05d9'}, // ײ -> יי
-    {lig: '\ufb1d', split: '\u05d9' + '\u05b4'}, // יִ -> יִ
-    {lig: '\ufb1f', split: '\u05d9' + '\u05d9' + '\u05b7'}, // ײַ -> ייַ
+    {lig: '\ufb1d', split: '\u05d9' + '\u05b4'}, // יִ -> יִ
+    {lig: '\ufb1f', split: '\u05d9' + '\u05d9' + '\u05b7'}, // ײַ -> ייַ
     {lig: '\ufb2e', split: '\u05d0' + '\u05b7'}, // Pasekh alef
     {lig: '\ufb2f', split: '\u05d0' + '\u05b8'}, // Komets alef
 ];
 
-/** @type {AlwaysOnTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const combineYiddishLigatures = {
     name: 'Combine Ligatures',
     description: 'וו → װ',
-    options: [true],
     process: (str) => {
         for (const ligature of ligatures) {
             str = str.replace(ligature.split, ligature.lig);
         }
-        return str;
+        return [str];
     },
 };
 
-/** @type {AlwaysOnTextProcessor} */
+/** @type {import('language').TextProcessor} */
 export const removeYiddishDiacritics = {
     name: 'Remove Diacritics',
     description: 'פאת → פֿאָתּ',
-    options: [true],
-    process: (str) => {
-        return str.replace(/[\u05B0-\u05C7]/g, '');
-    },
+    process: (str) => [str.replace(/[\u05B0-\u05C7]/g, '')],
 };

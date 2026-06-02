@@ -17,29 +17,20 @@
 
 import type {LanguageTransformDescriptor} from './language-transformer.js';
 
-export type TextProcessorFunction<TSetting = unknown> = (str: string, setting: TSetting) => string;
+export type TextProcessorFunction = (str: string) => string[];
 
 /**
  * Text pre- and post-processors are used during the translation process to create alternate versions of the input text to search for.
  * This is helpful when the input text doesn't exactly match the term or expression found in the database.
- * When a language has multiple processors, the translator will generate variants of the text by applying all combinations of the processors and option values.
+ * When a language has multiple processors, the translator will generate variants of the text by applying all combinations of the processors.
+ * The process function returns an array of strings: all variants the processor wants to produce for the given input.
+ * Returning the original string as the first element is conventional for optional processors (equivalent to an "off" option).
+ * Always-on processors omit the original string from the result.
  */
-export type TextProcessor<TSetting = unknown> = {
+export type TextProcessor = {
     name: string;
     description: string;
-    options: TSetting[];
-    process: TextProcessorFunction<TSetting>;
-};
-
-export type BooleanTextProcessor = TextProcessor<boolean>;
-
-export type BidirectionalConversionPreprocessor = TextProcessor<'off' | 'direct' | 'inverse'>;
-
-export type AlwaysOnTextProcessor = {
-    name: string;
-    description: string;
-    options: boolean[];
-    process: (str: string) => string;
+    process: TextProcessorFunction;
 };
 
 export type ReadingNormalizer = (str: string) => string;
@@ -60,9 +51,9 @@ export type LanguageAndTransforms = {
     languageTransforms: LanguageTransformDescriptor;
 };
 
-export type TextProcessorWithId<TSetting = unknown> = {
+export type TextProcessorWithId = {
     id: string;
-    textProcessor: TextProcessor<TSetting> | AlwaysOnTextProcessor;
+    textProcessor: TextProcessor;
 };
 
 export type LanguageSummary = {
