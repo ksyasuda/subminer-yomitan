@@ -160,8 +160,8 @@ export class DisplayAnki {
 
         const dictionaryEntry = findResult.dictionaryEntries[0];
 
-        const cardFormats = options.anki.cardFormats;
-        if (!cardFormats || cardFormats.length === 0) {
+        const configuredCardFormats = options.anki.cardFormats;
+        if (!configuredCardFormats || configuredCardFormats.length === 0) {
             throw new Error('No Anki card formats configured');
         }
 
@@ -181,9 +181,17 @@ export class DisplayAnki {
             sentence: {text: word, offset: 0},
         };
 
-        const {note, errors} = await this._ankiNoteBuilder.createNote({
+        const cardFormats = this._cardFormats.length > 0 ? this._cardFormats : configuredCardFormats;
+        const cardFormat = cardFormats.find((candidate) => candidate.type === dictionaryEntry.type);
+        if (!cardFormat) {
+            throw new Error(`No ${dictionaryEntry.type} Anki card format configured`);
+        }
+
+        const details = this._ankiNoteBuilder.getDictionaryEntryDetailsForNote(dictionaryEntry);
+        const audioDetails = this._getAnkiNoteMediaAudioDetails(details);
+        let {note, errors, requirements} = await this._ankiNoteBuilder.createNote({
             dictionaryEntry,
-            cardFormat: cardFormats[0],
+            cardFormat,
             context,
             template,
             tags: this._noteTags,
@@ -196,6 +204,31 @@ export class DisplayAnki {
             mediaOptions: null,
             dictionaryStylesMap,
         });
+
+        if (requirements.length > 0) {
+            ({note, errors} = await this._ankiNoteBuilder.createNote({
+                dictionaryEntry,
+                cardFormat,
+                context,
+                template,
+                tags: this._noteTags,
+                requirements,
+                duplicateScope: this._duplicateScope,
+                duplicateScopeCheckAllModels: this._duplicateScopeCheckAllModels,
+                resultOutputMode: this._resultOutputMode,
+                glossaryLayoutMode: this._glossaryLayoutMode,
+                compactTags: this._compactTags,
+                mediaOptions: {
+                    audio: audioDetails,
+                    screenshot: null,
+                    textParsing: {
+                        optionsContext,
+                        scanLength: this._scanLength,
+                    },
+                },
+                dictionaryStylesMap,
+            }));
+        }
 
         if (errors && errors.length > 0) {
             const msg = errors.map((e) => e.message || String(e)).join('; ');

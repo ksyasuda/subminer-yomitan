@@ -132,3 +132,91 @@ test('save note starts one background task and ignores repeated clicks while pen
     expect(display.progressIndicatorVisible.clearOverride).toHaveBeenCalledTimes(1);
     Reflect.deleteProperty(globalThis, 'chrome');
 });
+
+test('stats word mining includes configured Yomitan word audio media options', async () => {
+    Reflect.set(globalThis, 'chrome', {
+        runtime: {
+            getURL: (/** @type {string} */ path) => path,
+        },
+    });
+    document.body.innerHTML = '<div id="popup-menus"></div>';
+
+    const dictionaryEntry = {
+        type: 'term',
+        headwords: [{term: '猫', reading: 'ねこ'}],
+    };
+    const createNote = vi.fn(async (/** @type {{requirements?: unknown[]}} */ details) => ({
+        note: {fields: {Expression: '猫'}},
+        errors: [],
+        requirements: Array.isArray(details.requirements) && details.requirements.length > 0 ? [] : [{type: 'audio'}],
+    }));
+    const addAnkiNote = vi.fn(async () => 555);
+    const display = {
+        application: {
+            api: {
+                termsFind: vi.fn(async () => ({
+                    dictionaryEntries: [dictionaryEntry],
+                })),
+                getAnkiNoteInfo: vi.fn(async () => [{noteIds: [321]}]),
+                addAnkiNote,
+            },
+        },
+        getOptions: vi.fn(() => ({
+            anki: {
+                cardFormats: [
+                    {
+                        name: 'Mining',
+                        deck: 'Mining',
+                        model: 'JP',
+                        icon: 'circle',
+                        fields: {},
+                        type: 'term',
+                    },
+                ],
+            },
+        })),
+        updateOptions: vi.fn(),
+        getOptionsContext: vi.fn(() => ({depth: 0})),
+        getLanguageSummary: vi.fn(() => ({language: 'ja'})),
+    };
+    const displayAudio = {
+        getAnkiNoteMediaAudioDetails: vi.fn(() => ({
+            sources: [{type: 'custom-json', url: 'http://localhost/audio?term={term}'}],
+            preferredAudioIndex: 0,
+            enableDefaultAudioSources: false,
+        })),
+    };
+
+    const displayAnki = new DisplayAnki(/** @type {import('../ext/js/display/display.js').Display} */ (/** @type {unknown} */ (display)), /** @type {import('../ext/js/display/display-audio.js').DisplayAudio} */ (/** @type {unknown} */ (displayAudio)));
+    Reflect.set(displayAnki, '_ankiFieldTemplates', '{{audio}}');
+    Reflect.set(displayAnki, '_noteTags', ['SubMiner']);
+    Reflect.set(displayAnki, '_audioDownloadIdleTimeout', 1234);
+    Reflect.set(displayAnki, '_ankiNoteBuilder', {
+        getDictionaryStylesMap: vi.fn(() => new Map()),
+        getDictionaryEntryDetailsForNote: vi.fn(() => ({
+            type: 'term',
+            term: '猫',
+            reading: 'ねこ',
+        })),
+        createNote,
+    });
+
+    await expect(displayAnki.addNoteFromWord('猫')).resolves.toEqual({
+        noteId: 555,
+        duplicateNoteIds: [321],
+    });
+
+    expect(displayAudio.getAnkiNoteMediaAudioDetails).toHaveBeenCalledWith('猫', 'ねこ');
+    expect(createNote).toHaveBeenCalledTimes(2);
+    const secondCreateNoteDetails = /** @type {{requirements?: unknown, mediaOptions?: {audio?: unknown}}} */ (createNote.mock.calls[1]?.[0]);
+    expect(secondCreateNoteDetails.requirements).toEqual([{type: 'audio'}]);
+    expect(secondCreateNoteDetails.mediaOptions?.audio).toEqual({
+        sources: [{type: 'custom-json', url: 'http://localhost/audio?term={term}'}],
+        preferredAudioIndex: 0,
+        idleTimeout: 1234,
+        languageSummary: {language: 'ja'},
+        enableDefaultAudioSources: false,
+    });
+    expect(addAnkiNote).toHaveBeenCalledWith({fields: {Expression: '猫'}}, [321]);
+    Reflect.deleteProperty(globalThis, 'chrome');
+});
