@@ -27,7 +27,7 @@ import {fetchText} from '../core/fetch-utilities.js';
 import {logErrorLevelToNumber} from '../core/log-utilities.js';
 import {log} from '../core/log.js';
 import {isObjectNotArray} from '../core/object-utilities.js';
-import {clone, deferPromise, promiseTimeout} from '../core/utilities.js';
+import {clone, deferPromise, isLocalhostUrl, promiseTimeout} from '../core/utilities.js';
 import {generateAnkiNoteMediaFileName, INVALID_NOTE_ID, isNoteDataValid, mediaFileNameHashOrTimestamp} from '../data/anki-util.js';
 import {arrayBufferToBase64} from '../data/array-buffer-util.js';
 import {OptionsUtil} from '../data/options-util.js';
@@ -189,6 +189,7 @@ export class Backend {
             ['getLanguageSummaries',         this._onApiGetLanguageSummaries.bind(this)],
             ['heartbeat',                    this._onApiHeartbeat.bind(this)],
             ['forceSync',                    this._onApiForceSync.bind(this)],
+            ['fetchLocalAudioData',          this._onApiFetchLocalAudioData.bind(this)],
         ]);
 
         /** @type {import('api').PmApiMap} */
@@ -475,7 +476,7 @@ export class Backend {
 
 
     /**
-     * @param {chrome.tabs.ZoomChangeInfo} event
+     * @param {chrome.tabs.OnZoomChangeInfo} event
      */
     _onZoomChange({tabId, oldZoomFactor, newZoomFactor}) {
         this._sendMessageTabIgnoreResponse(tabId, {action: 'applicationZoomChanged', params: {oldZoomFactor, newZoomFactor}}, {});
@@ -1167,6 +1168,34 @@ export class Backend {
         return void 0;
     }
 
+    /** @type {import('api').ApiHandler<'fetchLocalAudioData'>} */
+    async _onApiFetchLocalAudioData({url}) {
+        if (!isLocalhostUrl(url)) {
+            log.error('Local audio URL must use HTTP or HTTPS on localhost');
+            return null;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            log.error(`Local server responded with HTTP status code ${response.status}`);
+            return null;
+        }
+
+        const contentType = response.headers.get('content-type') || 'audio/mpeg';
+        const arrayBuffer = await response.arrayBuffer();
+
+        let binary = '';
+        const bytes = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+
+        return {
+            data: btoa(binary),
+            contentType: contentType,
+        };
+    }
+
     // Command handlers
 
     /**
@@ -1722,7 +1751,8 @@ export class Backend {
             const codePoint = /** @type {number} */ (text.codePointAt(i));
             const character = String.fromCodePoint(codePoint);
             const substring = text.substring(i, i + scanLength);
-            const cacheKey = `${optionsContext.index}:${substring}`;
+            const metadataMode = useAllFrequencyDictionaries === true ? 1 : 0;
+            const cacheKey = `${optionsContext.index}:${metadataMode}:${substring}`;
             let cached = this._textParseCache.get(cacheKey);
             if (typeof cached === 'undefined') {
                 const {dictionaryEntries, originalTextLength} = await this._translator.findTerms(
@@ -1754,7 +1784,15 @@ export class Backend {
                                     if (src.matchType !== 'exact') { continue; }
                                     validSources.push(src);
                                 }
-                                if (validSources.length > 0) { validHeadwords.push({term: headword.term, reading: headword.reading, sources: validSources, frequencies: dictionaryEntry.frequencies.filter((f) => f.headwordIndex === headword.headwordIndex)}); }
+                                if (validSources.length > 0) {
+                                    validHeadwords.push({
+                                        term: headword.term,
+                                        reading: headword.reading,
+                                        sources: validSources,
+                                        frequencies: dictionaryEntry.frequencies.filter((f) => f.headwordIndex === headword.headwordIndex),
+                                        pronunciations: dictionaryEntry.pronunciations.filter((p) => p.headwordIndex === headword.headwordIndex),
+                                    });
+                                }
                             }
                             if (validHeadwords.length > 0) { trimmedHeadwords.push(validHeadwords); }
                         }
