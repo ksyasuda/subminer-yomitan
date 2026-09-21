@@ -103,7 +103,7 @@ export type MediaOptions = {
         format: Settings.AnkiScreenshotFormat;
         quality: number;
         contentOrigin: Extension.ContentOrigin;
-    };
+    } | null;
     textParsing: {
         optionsContext: Settings.OptionsContext;
         scanLength: number;
