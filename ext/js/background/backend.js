@@ -618,8 +618,8 @@ export class Backend {
     }
 
     /** @type {import('api').ApiHandler<'addAnkiNote'>} */
-    async _onApiAddAnkiNote({note, subminerDuplicateNoteIds}) {
-        return await this._anki.addNote(note, subminerDuplicateNoteIds);
+    async _onApiAddAnkiNote({note, subminerDuplicateNoteIds, subminerEnrich}) {
+        return await this._anki.addNote(note, subminerDuplicateNoteIds, subminerEnrich);
     }
 
     /** @type {import('api').ApiHandler<'updateAnkiNote'>} */

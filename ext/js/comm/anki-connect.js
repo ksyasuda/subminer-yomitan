@@ -118,15 +118,22 @@ export class AnkiConnect {
     /**
      * @param {import('anki').Note} note
      * @param {number[]} [subminerDuplicateNoteIds]
+     * @param {boolean} [subminerEnrich]
      * @returns {Promise<?import('anki').NoteId>}
      */
-    async addNote(note, subminerDuplicateNoteIds) {
+    async addNote(note, subminerDuplicateNoteIds, subminerEnrich) {
         if (!this._enabled) { return null; }
         await this._checkVersion();
-        /** @type {{note: import('anki').Note, subminerDuplicateNoteIds?: number[]}} */
+        /** @type {{note: import('anki').Note, subminerDuplicateNoteIds?: number[], subminerEnrich?: boolean}} */
         const params = {note};
-        if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
-            params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;
+        if (typeof subminerEnrich === 'boolean' || (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0)) {
+            const {subminerAnkiProxyUrl} = await chrome.storage.local.get('subminerAnkiProxyUrl');
+            if (typeof subminerAnkiProxyUrl === 'string' && subminerAnkiProxyUrl.replace(/\/$/, '') === this._server?.replace(/\/$/, '')) {
+                if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
+                    params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;
+                }
+                if (typeof subminerEnrich === 'boolean') { params.subminerEnrich = subminerEnrich; }
+            }
         }
         const result = await this._invoke('addNote', params);
         if (result !== null && typeof result !== 'number') {

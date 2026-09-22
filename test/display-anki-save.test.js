@@ -146,7 +146,7 @@ test('stats word mining includes configured Yomitan word audio media options', a
         headwords: [{term: '猫', reading: 'ねこ'}],
     };
     const createNote = vi.fn(async (/** @type {{requirements?: unknown[]}} */ details) => ({
-        note: {fields: {Expression: '猫'}},
+        note: {fields: {Expression: '猫'}, tags: ['SubMiner']},
         errors: [],
         requirements: Array.isArray(details.requirements) && details.requirements.length > 0 ? [] : [{type: 'audio'}],
     }));
@@ -217,6 +217,6 @@ test('stats word mining includes configured Yomitan word audio media options', a
         languageSummary: {language: 'ja'},
         enableDefaultAudioSources: false,
     });
-    expect(addAnkiNote).toHaveBeenCalledWith({fields: {Expression: '猫'}}, [321]);
+    expect(addAnkiNote).toHaveBeenCalledWith({fields: {Expression: '猫'}, tags: ['SubMiner', 'SubMiner::Stats']}, [321], false);
     Reflect.deleteProperty(globalThis, 'chrome');
 });

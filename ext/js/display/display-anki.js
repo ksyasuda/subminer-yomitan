@@ -239,7 +239,9 @@ export class DisplayAnki {
         const duplicateNoteIds = Array.isArray(noteInfoList) && noteInfoList.length > 0 ?
             [...new Set((noteInfoList[0]?.noteIds ?? []).filter((id) => id !== INVALID_NOTE_ID))].sort((a, b) => a - b) :
             [];
-        const noteId = await this._display.application.api.addAnkiNote(note, duplicateNoteIds);
+        // Stats supplies its own source sentence and media, independently of live playback.
+        note.tags = [...new Set([...note.tags, 'SubMiner::Stats'])];
+        const noteId = await this._display.application.api.addAnkiNote(note, duplicateNoteIds, false);
         return {noteId, duplicateNoteIds};
     }
 

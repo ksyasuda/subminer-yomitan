@@ -22,7 +22,6 @@ import {createApiMap, invokeApiMapHandler} from './core/api-map.js';
 import {EventDispatcher} from './core/event-dispatcher.js';
 import {ExtensionError} from './core/extension-error.js';
 import {log} from './core/log.js';
-import {deferPromise} from './core/utilities.js';
 import {WebExtension} from './extension/web-extension.js';
 
 /**
@@ -55,17 +54,17 @@ if (checkChromeNotAvailable()) {
  * @param {WebExtension} webExtension
  */
 async function waitForBackendReady(webExtension) {
-    const {promise, resolve} = /** @type {import('core').DeferredPromiseDetails<void>} */ (deferPromise());
-    /** @type {import('application').ApiMap} */
-    const apiMap = createApiMap([['applicationBackendReady', () => { resolve(); }]]);
-    /** @type {import('extension').ChromeRuntimeOnMessageCallback<import('application').ApiMessageAny>} */
-    const onMessage = ({action, params}, _sender, callback) => invokeApiMapHandler(apiMap, action, params, [], callback);
-    chrome.runtime.onMessage.addListener(onMessage);
-    try {
-        await webExtension.sendMessagePromise({action: 'requestBackendReadySignal'});
-        await promise;
-    } finally {
-        chrome.runtime.onMessage.removeListener(onMessage);
+    // The backend only handles this request after preparation completes. Its reply is
+    // sufficient; Electron can lose the separate ready broadcast during worker startup.
+    for (let attempt = 0; ; ++attempt) {
+        try {
+            await webExtension.sendMessagePromise({action: 'requestBackendReadySignal'});
+            return;
+        } catch (error) {
+            // Extension pages can start before Electron starts the fresh worker.
+            if (attempt >= 49) { throw error; }
+            await new Promise((resolve) => { setTimeout(resolve, 100); });
+        }
     }
 }
 

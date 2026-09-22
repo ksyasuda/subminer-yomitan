@@ -179,6 +179,7 @@ type ApiSurface = {
         params: {
             note: Anki.Note;
             subminerDuplicateNoteIds?: number[];
+            subminerEnrich?: boolean;
         };
         return: Anki.NoteId | null;
     };

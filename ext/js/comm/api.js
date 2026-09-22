@@ -100,14 +100,16 @@ export class API {
     /**
      * @param {import('api').ApiParam<'addAnkiNote', 'note'>} note
      * @param {number[]} [subminerDuplicateNoteIds]
+     * @param {boolean} [subminerEnrich]
      * @returns {Promise<import('api').ApiReturn<'addAnkiNote'>>}
      */
-    addAnkiNote(note, subminerDuplicateNoteIds) {
-        /** @type {{note: import('api').ApiParam<'addAnkiNote', 'note'>, subminerDuplicateNoteIds?: number[]}} */
+    addAnkiNote(note, subminerDuplicateNoteIds, subminerEnrich) {
+        /** @type {import('api').ApiParams<'addAnkiNote'>} */
         const params = {note};
         if (Array.isArray(subminerDuplicateNoteIds) && subminerDuplicateNoteIds.length > 0) {
             params.subminerDuplicateNoteIds = subminerDuplicateNoteIds;
         }
+        if (typeof subminerEnrich === 'boolean') { params.subminerEnrich = subminerEnrich; }
         return this._invoke('addAnkiNote', params);
     }
 
